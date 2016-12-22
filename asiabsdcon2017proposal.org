@@ -136,9 +136,17 @@ doadump:
 
 * Extended Abstract
 
-A tour of the BSD core dump facility and related new developments in FreeBSD
+Core dumps have been a part of BSD since it's beginning. Initially a manual
+process, core dumps have been automated since 3BSD and the LSI-11^[1]. Though 36
+years have passed since, the core dump facility in FreeBSD is not significantly
+different than it was then. The following describes the history of core dumps in
+the BSD operating systems tracing from 3BSD through to current work on
+compressed dumps, dumping over the network and encrypted dumps. In addition a
+call to action will be made for modularizing the core dump code.
 
-The BSD core memory dump facility performs a simple yet vital service to the
+Version 6 AT&T UNIX's =crash(8)=
+
+The BSD core dump facility performs a simple yet vital service to the
 operator: Preserving a copy of the contents of system memory at the time of a
 catastrophic failure, otherwise known as a panic. This copy can represent the
 full contents of system memory or a subset of it such as only active kernel
@@ -170,6 +178,7 @@ such as the OpenZFS file system. Blah blah blah...
 
 * References
 
-[1] =kern_shutdown.c sys/kern/kern_shutdown.c=
+[1] crash(8) - 3BSD
 [2] The Design and Implementation of the FreeBSD operating system by McKusick, Neville-Neil, and Watson
 [3] man 9 panic - https://www.freebsd.org/cgi/man.cgi?query=panic&apropos=0&sektion=0&manpath=FreeBSD+10.3-RELEASE+and+Ports&arch=default&format=html
+[4] =kern_shutdown.c sys/kern/kern_shutdown.c=
