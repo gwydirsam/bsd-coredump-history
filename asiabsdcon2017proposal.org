@@ -138,23 +138,41 @@ doadump:
 
 Crash dumps, also known as core dumps, have been a part of BSD since it's
 beginning. A core dump is ``a copy of memory that is saved on secondary storage
-by the kernel''^[1] for debugging a system failure. Initially a manual process,
-core dumping has been automated since 3BSD and the LSI-11^[2]. Though 36 years
-have passed since, the core dump facility in FreeBSD is not significantly
-different than it was then. 
+by the kernel''^[1] for debugging a system failure. Though 36 years have passed
+since =doadump= came about in 3BSD, core dumps are still created and utilized in
+much the same way they were then.
 
 The following describes the history of core dumps in the BSD operating systems
 tracing from the advent of =doadump= in 3BSD through to current work on
 compressed dumps, dumping over the network and encrypted dumps. In addition a
 call to action will be made for modularizing the core dump code.
 
-Version 6 AT&T UNIX's =crash(8)=
+Core dumping was initially a manual process as documented in Version 6 AT&T
+UNIX's =crash(8)=, an operator, ``if [they felt] up to
+debugging'' would:
+
+#+BEGIN_QUOTE
+With a tape mounted and ready,
+stop the machine, load address 44, and start.
+#+END_QUOTE
+
+Providing the operator with a core dump on tape to debug a crashed system.
+
+As of 3BSD and with the advent of the LSI-11 core dumping has been automated via
+=doadump= ^[2], the same function name used today. =doadump= was added to 3BSD
+in 1980 by Ozalp Babaoglu and was written in 33 lines of PDP-11 assembly.
+
+# TODO check this PDP-11 assembly assertion
+
+Beginning in 4.1BSD =doadump= was re-written in C for the VAX and placed in
+=sys/vax/vax/machdep.c=.
+
 
 The BSD core dump facility performs a simple yet vital service to the
-operator: Preserving a copy of the contents of system memory at the time of a
-catastrophic failure, otherwise known as a panic. This copy can represent the
-full contents of system memory or a subset of it such as only active kernel
-pages. (rephrased as *verb* by the kernel) The FreeBSD variant of the BSD
+operator: preserving a copy of the contents of system memory at the time of a
+fatal error, or =panic(9)=. This copy can represent the
+full contents of system memory, a full dump, or a subset of it such as only active kernel
+pages referred to as a minidump. The FreeBSD variant of the BSD
 operating system has introduced gradual extensions to this facility in the form
 of, "minidumps" that only represent kernel memory, debugger scripting at the
 time of panic, encrypted dumps, compressed dumps and the ability to dump to a
@@ -184,6 +202,5 @@ such as the OpenZFS file system. Blah blah blah...
 
 [1] The Design and Implementation of the FreeBSD operating system by McKusick, Neville-Neil, and Watson
 [2] crash(8) - 3BSD
-[2] The Design and Implementation of the FreeBSD operating system by McKusick, Neville-Neil, and Watson
 [3] man 9 panic - https://www.freebsd.org/cgi/man.cgi?query=panic&apropos=0&sektion=0&manpath=FreeBSD+10.3-RELEASE+and+Ports&arch=default&format=html
 [4] =kern_shutdown.c sys/kern/kern_shutdown.c=
