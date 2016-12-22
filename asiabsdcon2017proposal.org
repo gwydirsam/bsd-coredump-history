@@ -134,22 +134,72 @@ doadump:
 #+END_COMMENT
 
 
-* Extended Abstract
+
+* Introduction
 
 Crash dumps, also known as core dumps, have been a part of BSD since it's
 beginning. A core dump is ``a copy of memory that is saved on secondary storage
 by the kernel''^[1] for debugging a system failure. Though 36 years have passed
 since =doadump= came about in 3BSD, core dumps are still created and utilized in
-much the same way they were then.
+much the same way they were then. In addition a call to action will be made for
+modularizing the core dump code.
 
-The following describes the history of core dumps in the BSD operating systems
-tracing from the advent of =doadump= in 3BSD through to current work on
-compressed dumps, dumping over the network and encrypted dumps. In addition a
-call to action will be made for modularizing the core dump code.
+* Background
+
+The BSD core dump facility performs a simple yet vital service to the operator:
+preserving a copy of the contents of system memory at the time of a fatal error,
+or =panic(9)=. This copy can represent the full binary contents of system
+memory, a subset of kernel pages that are active at the time of the crash , or a
+less complete but human readable form referred to as a ``textdump''.
+
+The FreeBSD variant of the BSD operating system has introduced gradual
+extensions to this facility in the form of, ``minidumps'' that only represent
+kernel memory, ``textdumps'' consisting of the result of debugger scripting at the time of
+panic, encrypted dumps, compressed dumps and the ability to dump to a remote
+network device. While promising, these extensions have been inconsistent in
+their integration and interoperability. 
+
+#+BEGIN_COMMENT
+(And if we're
+lucky, some news about dump procedures relating to hibernation and virtual
+machine migration!)
+#+END_COMMENT
+
+This paper will provide a historical survey of these dump extensions and
+describe an active effort to fully modularize them, allowing the operator to
+enable one or more of them simultaneously. It will also address related
+utilities to determine the size of a dump in advance and kernel debugger (DDB)
+scripting options.
+
+
+* Motivation
+
+For decades, increases in physical system memory and swap partition size have
+loosely tracked increases in available persistent memory, allowing for the
+continued use of the original BSD core dump facilities. Since 4.1BSD, an
+operator would allocate a region on disk to a ``dumpdev'' that is equal to
+physical system memory plus a small buffer. 
+
+However, recent advances in commodity system hardware have upended the
+traditional RAM to disk space ratio with systems now being capable of supporting
+2TB or more physical memory running on relatively small solid state disks. Given
+that the kernel memory footprint has grown in size, the assumption that disk
+space would always allow for a swap partition large enough for a core dump has
+proved to be inaccurate. This change in paradigm has spurred development of
+several extensions to the core dumping facility, including compressed dumping
+and dumping over the network to a server with disk space for modern core dumps.
+Network Dumping, or =netdump= does have some security implications which recent
+work on encrypted dumping may resolve.
+
+* Quick History
+
+The following is a quick history of core dumps in the BSD operating systems
+tracing from before the advent of =doadump= in 3BSD through to the present and a
+discussion of current work on compressed dumps, dumping over the network and
+encrypted dumps.
 
 Core dumping was initially a manual process as documented in Version 6 AT&T
-UNIX's =crash(8)=, an operator, ``if [they felt] up to
-debugging'' would:
+UNIX's =crash(8)=, an operator, ``if [they felt] up to debugging'' would:
 
 #+BEGIN_QUOTE
 With a tape mounted and ready,
@@ -167,36 +217,9 @@ in 1980 by Ozalp Babaoglu and was written in 33 lines of PDP-11 assembly.
 Beginning in 4.1BSD =doadump= was re-written in C for the VAX and placed in
 =sys/vax/vax/machdep.c=.
 
-
-The BSD core dump facility performs a simple yet vital service to the
-operator: preserving a copy of the contents of system memory at the time of a
-fatal error, or =panic(9)=. This copy can represent the
-full contents of system memory, a full dump, or a subset of it such as only active kernel
-pages referred to as a minidump. The FreeBSD variant of the BSD
-operating system has introduced gradual extensions to this facility in the form
-of, "minidumps" that only represent kernel memory, debugger scripting at the
-time of panic, encrypted dumps, compressed dumps and the ability to dump to a
-remote network device. While promising, these extensions have been inconsistent
-in their integration and interoperability. This paper will provide a historical
-survey of these dump extensions and describe an active effort to fully
-modularize them, allowing the operator to enable one or more of them
-simultaneously. It will also address related utilities to determine the size of
-a dump in advance and kernel debugger (DDB) scripting options. (And if we're
-lucky, some news about dump procedures relating to hibernation and virtual
-machine migration!)
-
-For decades, increases in physical system memory have loosely tracked increases
-in available persistent memory, allowing for the continued use of the original
-BSD <exact term> dump facilities. Traditionally, an operator would allocate a
-region on disk to a "dumpdev" that is equal to physical system memory plus a
-small buffer. Recent advances in commodity system hardware have however strained
-this memory/disk ratio with systems now being capable of supporting 2TB or more
-physical memory. Given that the operating system has not grow in size in similar
-proportion, the notion of an all-flash boot device that has adequate space for s
-full copy of system memory is not practical or financially advisable. This
-evolving relationship/ratio/paradigm (find a less-repulsive term) has motivated
-many dump-related efforts and with an added urgency thanks to new facilities
-such as the OpenZFS file system. Blah blah blah...
+# TODO Talk here about added architectures? Pretty much everything is the same
+# from here on out just added architectures
+# add netdump history?
 
 * References
 
