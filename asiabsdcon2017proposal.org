@@ -147,7 +147,7 @@ modularizing the core dump code.
 
 #+END_COMMENT
 
-* Background
+* Introduction
 
 The BSD core dump facility performs a simple yet vital service to the operator:
 preserving a copy of the contents of system memory at the time of a fatal error,
@@ -196,6 +196,16 @@ and dumping over the network to a server with disk space for modern core dumps.
 Network Dumping, or =netdump= does have some security implications which recent
 work on encrypted dumping may resolve.
 
+* Background
+  - Canonical BSD Unix core memory dumping: All memory to a
+       pre-designated device
+    - 64kb indent, starts dumping at END of dump dev in case you
+         start swapping early in boot before you retrieve the dump.
+         4.2BSD?
+    - kern/kern\_shutdown.c (Traditional)
+
+    - Backtrace.io paper here
+
 * History
 
 ** Core Dumps in BSD
@@ -229,14 +239,21 @@ Beginning in 4.1BSD =doadump= was re-written in C for the VAX and placed in
 
 ** =netdump=
 # add netdump history?
+    - Netdumps
+      - Duke University code from long ago
+      - Picked up by Ed Maste at Sandvine, dropped
+      - Picked up by Isilon
+        - Added compression code? Picked it up
+      - Modular...
 
 ** Compresssed Dump
 ** Encrypted Dump
+    - Encryption - landed in head 12/10/2016 (Verify)
 
 
 * References
 
-[1] The Design and Implementation of the FreeBSD operating system by McKusick, Neville-Neil, and Watson
-[2] crash(8) - 3BSD
-[3] man 9 panic - https://www.freebsd.org/cgi/man.cgi?query=panic&apropos=0&sektion=0&manpath=FreeBSD+10.3-RELEASE+and+Ports&arch=default&format=html
-[4] =kern_shutdown.c sys/kern/kern_shutdown.c=
+- [1] The Design and Implementation of the FreeBSD operating system by McKusick, Neville-Neil, and Watson
+- [2] crash(8) - 3BSD
+- [3] man 9 panic - https://www.freebsd.org/cgi/man.cgi?query=panic&apropos=0&sektion=0&manpath=FreeBSD+10.3-RELEASE+and+Ports&arch=default&format=html
+- [4] =kern_shutdown.c sys/kern/kern_shutdown.c=
