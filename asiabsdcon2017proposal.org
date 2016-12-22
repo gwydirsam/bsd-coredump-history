@@ -1,0 +1,175 @@
+#+OPTIONS: ':nil *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline author:t c:nil
+#+OPTIONS: creator:nil d:(not "LOGBOOK") date:t e:t email:nil f:t inline:t
+#+OPTIONS: num:t p:nil pri:nil prop:nil stat:t tags:t tasks:t tex:t timestamp:t
+#+OPTIONS: title:t toc:nil todo:t |:t
+#+TITLE: The History and Future of Core Dumps in FreeBSD
+#+DATE: \today
+#+AUTHOR: Sam Gwydir
+#+EMAIL: sam@samgwydir.com
+#+LANGUAGE: en
+#+SELECT_TAGS: export
+#+EXCLUDE_TAGS: noexport
+#+CREATOR: Emacs 25.1.1 (Org mode 8.3.5)
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS: [a4paper,article,12pt,twocolumn]
+#+LATEX_HEADER: \usepackage[top=1.5in, bottom=1.50in, left=1.00in, right=1.00in]{geometry}
+#+LATEX_HEADER: \setlength{\parindent}{4em}
+#+LATEX_HEADER: \setlength{\parskip}{1em}
+#+LATEX_HEADER: \renewcommand{\baselinestretch}{1.0}
+#+LATEX_HEADER_EXTRA:
+#+DESCRIPTION:
+#+KEYWORDS:
+#+SUBTITLE:
+
+#+BEGIN_COMMENT
+
+- SUBMIT TO: secretary@asiabsdcon.org
+- EMAIL:
+  - Paper title
+  - Abstract
+  - Names and affiliations of the authors
+  - Name of the speaker and whether a visa application is required or not to visit Japan
+  - Estimation of your travel expense
+  - Contact email address
+
+
+- There is a significant problem being solved or a real world experience being demonstrated.
+- There is active work being done.
+- There is enough progress to make a complete written submission.
+- There is data proving either the success or failure of any claims.
+
+-Questions
+
+Q: Are we going to focus on amd64 and x86?
+
+Outline
+- What is a core dump?
+- System 6
+- Crash(8)
+If the reason for the crash is not evident
+(see below for guidance on `evident')
+you may want to try to dump the system if you feel up to
+debugging.
+At the moment a dump can be taken only on magtape.
+With a tape mounted and ready,
+stop the machine, load address 44, and start.
+This should write a copy of all of core
+on the tape with an EOF mark.
+
+- 3BSD
+added to crash(8) in 3BSD: (Someday the LSI-11 will do this automatically.)
+
+root@freebsd-current:~/src/unix-history-repo # git branch
+  BSD-3-Snapshot-Development
+root@freebsd-current:~/src/unix-history-repo # git log usr/src/sys/sys/locore.s
+commit 78bb3f5f916ebc2ee66d7dbfbe93db9a97e6d3ca
+Author: Ozalp Babaoglu <ozalp@ucbvax.Berkeley.EDU>
+Date:   Wed Jan 16 00:08:32 1980 -0800
+
+    BSD 3 development
+    Work on file usr/src/sys/sys/locore.s
+
+    Co-Authored-By: Bill Joy <wnj@ucbvax.Berkeley.EDU>
+    Co-Authored-By: Juan Porcar <x-jp@ucbvax.Berkeley.EDU>
+    Synthesized-from: 3bsd
+root@freebsd-current:~/src/unix-history-repo # grep -A20 doadump usr/src/sys/sys/locore.s
+	.globl	doadump
+doadump:
+	movl	sp,dumpstack		# save stack pointer
+	movab	dumpstack,sp		# reinit stack
+	mfpr	$PCBB,-(sp)		# save u-area pointer
+	mfpr	$MAPEN,-(sp)		# save value
+	mfpr	$IPL,-(sp)		# ...
+	mtpr	$0,$MAPEN		# turn off memory mapping
+	mtpr	$HIGH,$IPL		# disable interrupts
+	pushr	$0x3fff			# save regs 0 - 13
+	calls	$0,_dump		# produce dump
+	halt
+
+	.data
+	.align	2
+	.globl	dumpstack
+	.space	58*4			# separate stack for tape dumps
+- 4.2BSD
+  - /usr/src/sys/vax/vax/machdep.c
+  - doadump and dumpsys
+  - 'doadump() { dumpsys(); }'
+- FreeBSD Dumping History
+  - The Design and Implementation of FreeBSD
+  - Canonical BSD Unix core memory dumping: All memory to a
+       pre-designated device
+    - 64kb indent, starts dumping at END of dump dev in case you
+         start swapping early in boot before you retrieve the dump.
+         4.2BSD?
+    - kern/kern\_shutdown.c (Traditional)
+- FreeBSD Dumping Present
+  - Dumps on machines with 300 GB of RAM+ can be huge
+    - Swap partitions need not be so large for any other reason
+  - Updated FreeBSD dumping
+    - 64kb indent, dump from end preserved (verify)
+      - sys/kern/kern\_dump.c
+      - sys/kern/kern\_shutdown.c
+      - sys/amd64/amd64/machdep\_minidump.c
+      - and rarely bits might be in sys/amd64/amd64/pmap.c
+    - “Minidumps” of only active kernel pages
+    - Dump time DDB scripting
+      - Useful if you don't have a dump device
+      - DDB must be built into the kernel
+      - No performance penalty but...
+      - Security risk with the CTRL-ALT-ESC shortcut
+        - Can be disabled at compile time, FreeNAS does this
+- FreeBSD Dumping Future
+  - Netdumps
+  - Compressed Dumps
+  - Encrypted Dumps
+  - New features at various stages of integration
+    - Netdumps
+      - Duke University code from long ago
+      - Picked up by Ed Maste at Sandvine, dropped
+      - Picked up by Isilon
+        - Added compression code? Picked it up
+      - Modular...
+    - Encryption - landed in head 12/10/2016 (Verify)
+
+#+END_COMMENT
+
+
+* Extended Abstract
+
+A tour of the BSD core dump facility and related new developments in FreeBSD
+
+The BSD core memory dump facility performs a simple yet vital service to the
+operator: Preserving a copy of the contents of system memory at the time of a
+catastrophic failure, otherwise known as a panic. This copy can represent the
+full contents of system memory or a subset of it such as only active kernel
+pages. (rephrased as *verb* by the kernel) The FreeBSD variant of the BSD
+operating system has introduced gradual extensions to this facility in the form
+of, "minidumps" that only represent kernel memory, debugger scripting at the
+time of panic, encrypted dumps, compressed dumps and the ability to dump to a
+remote network device. While promising, these extensions have been inconsistent
+in their integration and interoperability. This paper will provide a historical
+survey of these dump extensions and describe an active effort to fully
+modularize them, allowing the operator to enable one or more of them
+simultaneously. It will also address related utilities to determine the size of
+a dump in advance and kernel debugger (DDB) scripting options. (And if we're
+lucky, some news about dump procedures relating to hibernation and virtual
+machine migration!)
+
+For decades, increases in physical system memory have loosely tracked increases
+in available persistent memory, allowing for the continued use of the original
+BSD <exact term> dump facilities. Traditionally, an operator would allocate a
+region on disk to a "dumpdev" that is equal to physical system memory plus a
+small buffer. Recent advances in commodity system hardware have however strained
+this memory/disk ratio with systems now being capable of supporting 2TB or more
+physical memory. Given that the operating system has not grow in size in similar
+proportion, the notion of an all-flash boot device that has adequate space for s
+full copy of system memory is not practical or financially advisable. This
+evolving relationship/ratio/paradigm (find a less-repulsive term) has motivated
+many dump-related efforts and with an added urgency thanks to new facilities
+such as the OpenZFS file system. Blah blah blah...
+
+* References
+
+[1] =kern_shutdown.c sys/kern/kern_shutdown.c=
+[2] The Design and Implementation of the FreeBSD operating system by McKusick, Neville-Neil, and Watson
+[3] man 9 panic - https://www.freebsd.org/cgi/man.cgi?query=panic&apropos=0&sektion=0&manpath=FreeBSD+10.3-RELEASE+and+Ports&arch=default&format=html
