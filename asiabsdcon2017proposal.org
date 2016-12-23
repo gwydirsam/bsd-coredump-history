@@ -134,18 +134,14 @@ doadump:
 
 
 
-#+BEGIN_COMMENT
+# * Introduction
 
-\* Introduction
-
-Crash dumps, also known as core dumps, have been a part of BSD since it's
-beginning. A core dump is ``a copy of memory that is saved on secondary storage
-by the kernel''^[1] for debugging a system failure. Though 36 years have passed
-since =doadump= came about in 3BSD, core dumps are still created and utilized in
-much the same way they were then. In addition a call to action will be made for
-modularizing the core dump code.
-
-#+END_COMMENT
+# Crash dumps, also known as core dumps, have been a part of BSD since it's
+# beginning. A core dump is ``a copy of memory that is saved on secondary storage
+# by the kernel''^[1] for debugging a system failure. Though 36 years have passed
+# since =doadump= came about in 3BSD, core dumps are still created and utilized in
+# much the same way they were then. In addition a call to action will be made for
+# modularizing the core dump code.
 
 * Introduction
 
@@ -157,7 +153,7 @@ less complete but human readable form using debugger scripting.
 
 The FreeBSD variant of the BSD operating system has introduced gradual
 extensions to the core dumping facility in the form of, ``minidumps'' that only
-represent active kernel memory, ``textdumps'' consisting of the result of debugger
+represent active kernel memory, ``textdumps(4)'' consisting of the result of debugger
 scripting at the time of panic, encrypted dumps, compressed dumps and the
 ability to dump to a remote network device. While promising, these extensions
 have been inconsistent in their integration and interoperability.
@@ -175,8 +171,8 @@ related utilities to determine the size of a dump in advance and kernel debugger
 
 * Motivation
 
-Though core dumps were originally made to magnetic tape, after 4.1BSD, dumps
-have been made to a swap partition on a hard disk.
+Though core dumps were originally made to magnetic tape, dumps
+have been made to a swap partition on a hard disk since at least 3BSD.
 For decades since, increases in physical system memory and swap partition size have
 loosely tracked increases in available persistent memory, allowing for the
 continued use of this paradigm. 
@@ -197,14 +193,64 @@ Network Dumping, or =netdump= does have some security implications which recent
 work on encrypted dumping may resolve.
 
 * Background
-  - Canonical BSD Unix core memory dumping: All memory to a
-       pre-designated device
-    - 64kb indent, starts dumping at END of dump dev in case you
-         start swapping early in boot before you retrieve the dump.
-         4.2BSD?
-    - kern/kern\_shutdown.c (Traditional)
+  # - Canonical BSD Unix core memory dumping: All memory to a
+  #      pre-designated device
+  #   - 64kb indent, starts dumping at END of dump dev in case you
+  #        start swapping early in boot before you retrieve the dump.
+  #        4.2BSD?
+  #   - kern/kern\_shutdown.c (Traditional)
 
-    - Backtrace.io paper here
+  #   - Backtrace.io paper here
+  # https://backtrace.io/blog/improving-freebsd-kernel-debugging/
+
+When a UNIX-like system such as FreeBSD encounters an unrecoverable and
+unexpected error the kernel will "panic". Though the word panic has connotations
+of irrationality, the function =panic(9)= maintains composure while it
+"[terminates] the running system" and "[attempts] to save a core dump" to a
+configured dump device. [2] Core dumps, sometimes known as crash dumps are
+used to debug system failures. Crash dumps are "a copy of memory that is saved
+on secondary storage by the kernel when a catastrophic failure occurs." [1]
+What follows is a thorough description of the FreeBSD core dump routine starting
+with =doadump()= in =sys/kern/kern_shutdown.c=. The FreeBSD operating system
+source code can be checked out using subversion by following the FreeBSD
+handbook instructions [3].
+
+
+=doadump()= is called by =kern_reboot()=, which shutsdown "the system cleanly to
+prepare for reboot, halt, or power off." [4] =kern_reboot()= calls
+=doadump()= if the =RB_DUMP= flag is set and the system is not "cold" or already
+creating a core dump. =doadump()= takes a boolean informing it to whether or not
+to take a "text dump", a form of dump carried out if the online kernel debugger,
+=DDB=, is built into the running kernel. =doaddump()= returns an error code if
+the system is currently creating a dump, the dumper is NULL and returns error
+codes on behalf of =dumpsys()=.
+
+=doadump(boolean_t textdump)= starts the core dump procedure by saving the
+current context with a call to =savectx()= and then invokes a core dump using
+=dumpsys()=, passing it a =struct dumper= and optionally a "text dump" which is
+carried out if the online kernel debugger, =DDB=, is built into the running
+kernel.
+
+=dumpsys()= is defined on a per-architecture basis. This allows different
+architectures to setup their dump structure differently. =dumpsys()= calls
+=dumpsys_generic()= passing along the =struct dumperinfo= it was called with.
+=dumpsys_generic()= is defined in =sys/kern/kern_dump.c= and is the meat of the
+core dump procedure.
+
+There are several main steps to the dumping procedure. The main steps are as
+follows. At any point if there is an error condition, goto failure cleanup at
+the end of the procedure.
+
+1. Fill in the ELF header.
+2. Calculate the dump size.
+3. Determine if the dump device is large enough.
+4. Begin Dump
+   1. Leader (Padding)
+   2. ELF Header
+   3. Program Headers
+   4. Memory Chunks
+   5. Trailer
+5. End Dump
 
 * History
 
@@ -221,7 +267,7 @@ UNIX's =crash(8)=, an operator, ``if [they felt] up to debugging'' would:
 #+BEGIN_QUOTE
 With a tape mounted and ready,
 stop the machine, load address 44, and start.
-#END_QUOTE
+#+END_QUOTE
 
 Providing the operator with a core dump on tape to debug a crashed system.
 
@@ -238,17 +284,18 @@ Beginning in 4.1BSD =doadump= was re-written in C for the VAX and placed in
 # from here on out just added architectures
 
 ** =netdump=
+
 # add netdump history?
-    - Netdumps
-      - Duke University code from long ago
-      - Picked up by Ed Maste at Sandvine, dropped
-      - Picked up by Isilon
-        - Added compression code? Picked it up
-      - Modular...
+    # - Netdumps
+    #   - Duke University code from long ago
+    #   - Picked up by Ed Maste at Sandvine, dropped
+    #   - Picked up by Isilon
+    #     - Added compression code? Picked it up
+    #   - Modular...
 
 ** Compresssed Dump
 ** Encrypted Dump
-    - Encryption - landed in head 12/10/2016 (Verify)
+    # - Encryption - landed in head 12/10/2016 (Verify)
 
 
 * References
@@ -256,4 +303,5 @@ Beginning in 4.1BSD =doadump= was re-written in C for the VAX and placed in
 - [1] The Design and Implementation of the FreeBSD operating system by McKusick, Neville-Neil, and Watson
 - [2] crash(8) - 3BSD
 - [3] man 9 panic - https://www.freebsd.org/cgi/man.cgi?query=panic&apropos=0&sektion=0&manpath=FreeBSD+10.3-RELEASE+and+Ports&arch=default&format=html
-- [4] =kern_shutdown.c sys/kern/kern_shutdown.c=
+- [4] =kern_shutdown.c= - =sys/kern/kern_shutdown.c=
+- [5] Unix History Repository - https://github.com/dspinellis/unix-history-repo
