@@ -1,10 +1,11 @@
-#+OPTIONS: ':nil *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline author:t c:nil
+#+OPTIONS: ':t *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline author:t c:nil
 #+OPTIONS: creator:nil d:(not "LOGBOOK") date:t e:t email:nil f:t inline:t
 #+OPTIONS: num:t p:nil pri:nil prop:nil stat:t tags:t tasks:t tex:t timestamp:t
 #+OPTIONS: title:t toc:nil todo:t |:t
 #+TITLE: The History and Future of Core Dumps in FreeBSD
+
 #+DATE: \today
-#+AUTHOR: Sam Gwydir, Texas A&M University
+#+AUTHOR: Sam W. Gwydir, Texas A&M University, Groupon Inc. =sam@samgwydir.com=
 #+EMAIL: sam@samgwydir.com
 #+LANGUAGE: en
 #+SELECT_TAGS: export
@@ -161,54 +162,98 @@ doadump:
 
 * Introduction
 
-The BSD core dump facility performs a simple yet vital service to the operator:
-preserving a copy of the contents of system memory at the time of a fatal error,
-or =panic(9)=. This copy can represent a machine readable dump of the contents of system
-memory, a subset of those kernel pages that are active at the time of the crash, or a
-less complete but human readable form using debugger scripting.
+  The BSD core dump facility performs a simple yet vital service to the operator:
+  preserving a copy of the contents of system memory at the time of a fatal error
+  for later debugging. 
 
-The FreeBSD variant of the BSD operating system has introduced gradual
-extensions to the core dumping facility in the form of, ``minidumps'' that only
-represent active kernel memory, ``textdumps(4)'' consisting of the result of debugger
-scripting at the time of panic, encrypted dumps, compressed dumps and the
-ability to dump to a remote network device. While promising, these extensions
-have been inconsistent in their integration and interoperability.
+# This copy or ``dump'' can be a machine readable form of the
+#   contents of system memory, the set of kernel pages that are active at the
+#   time of the crash, or a less complete but human readable form using debugger
+#   scripting.
 
-# (And if we're
-# lucky, some news about dump procedures relating to hibernation and virtual
-# machine migration!)
+  Throughout the history of UNIX operating systems, different methods have been
+  used to produce a core dump. The earliest (pre UNIX) core dumps were made
+  directly to a line printer, taking some hours to print. In the earliest UNIXes
+  magnetic tape was the only supported dump device but when hard disks support
+  matured swap space was used, obviating the need for changing out tapes before
+  a dump. Modern and embedded systems continue to introduce new constraints that
+  have motivated the need for newer methods of exfiltrating a core dump from a
+  faltering kernel.
 
-This paper will provide a historical survey of the dump facility itself, these
-dump extensions, and describe an active effort to fully modularize them, allowing
-the operator to enable one or more of them simultaneously. It will also address
-related utilities to determine the size of a dump in advance and kernel debugger
-(DDB) scripting options.
+# according to crash(8)
+
+  # "Well in 1979 I can remeber doing a crash dump on a Harris S/210 24 bit
+  # machine to the line printer in octal, it only took 2 hours to print...." - rgrimes
+  # https://en.wikipedia.org/wiki/Core_dump#cite_note-6
+
+  The FreeBSD variant of the BSD operating system has introduced gradual
+  extensions to the core dumping facility. FreeBSD 6.2 introduced ``minidumps'',
+  a subset of a full dump that only consists of active kernel memory . FreeBSD
+  7.1's =textdumps(4)= consist of the result of debugger scripting at the time
+  of =panic(9)=. In FreeBSD 12 CURRENT public-key cryptographic encryption has
+  introduced support for core dumps. Though not in the main source tree,
+  compressed dumps and the ability to dump to a remote network device exist and
+  function. While promising, these extensions have been inconsistent in their
+  integration and interoperability. Notably, Mac OS X has also introduced
+  similiar compression and network dumping features into their kernel albeit
+  with a distinct pedigree from FreeBSD.
+
+  # note Peter Wemm introduced minidumps 2006
+  # note Robert Watson introduced text dumps 2007?
+  # note def introduced encrypted dump 2016 https://reviews.freebsd.org/D4712
+  # apple dumps
+  # https://developer.apple.com/library/content/technotes/tn2004/tn2118.html
+
+  # (And if we're
+  # lucky, some news about dump procedures relating to hibernation and virtual
+  # machine migration!)
+
+  The following paper will provide a historical survey of the dump facility
+  itself, from its' introduction in UNIX to its' current form in modern
+  BSDs and BSD related operating systems. We will also explore these core dump
+  extensions, associated tools, and describe an active effort to fully modularize
+  them, allowing the operator to enable one or more of them simultaneously.
+
+  # It will also address
+  # related utilities to determine the size of a dump in advance 
+
+  # What do can we say about textdumps?
+  # and kernel debugger
+  # (DDB) scripting options.
 
 
 * Motivation
 
-Though core dumps were originally made to magnetic tape, dumps
-have been made to a swap partition on a hard disk since at least 3BSD.
-For decades since, increases in physical system memory and swap partition size have
-loosely tracked increases in available persistent memory, allowing for the
-continued use of this paradigm. 
+  In UNIX and early BSD's core dumps were originally made to magnetic
+  tape which was superseceded by dumping to a swap partition on a hard disk
+  since at least 3BSD. For decades since, increases in physical system memory
+  and swap partition size have loosely tracked increases in available persistent
+  memory, allowing for the continued use of this paradigm.
 
-# Since 4.1BSD, an
-# operator would allocate a region on disk to a ``dumpdev'' that is equal to
-# physical system memory plus a small buffer. 
+  # Since 4.1BSD, an
+  # operator would allocate a region on disk to a ``dumpdev'' that is equal to
+  # physical system memory plus a small buffer. 
 
-However, recent advances in commodity system hardware have upended the
-traditional memory to disk space ratio with systems now routinely utilizing 1TB
-or more physical memory whilst running on relatively small solid state disks.
-Given that the kernel memory footprint has grown in size, the assumption that
-disk space would always allow for a swap partition large enough for a core dump
-has proved to be inaccurate. This change has spurred development of
-several extensions to the core dumping facility, including compressed dumping
-and dumping over the network to a server with disk space for modern core dumps.
-Network Dumping, or =netdump= does have some security implications which recent
-work on encrypted dumping may resolve.
+  However, recent advances in commodity system hardware have upended the
+  traditional memory to disk space ratio with systems now routinely utilizing
+  1TB or more physical memory whilst running on less than 256GB of solid state
+  disk. Given that the kernel memory footprint has grown in size, the assumption
+  that disk space would always allow for a swap partition large enough for a
+  core dump has proved to be inaccurate. This change has spurred development of
+  several extensions to the core dumping facility, including compressed dumping
+  to swap and dumping over the network to a server with disk space for modern
+  core dumps. Because dumps contain all the contents of memory any sensitive
+  information in flight at the time of a crash appears in the dump. For this
+  reason and others encrypted dumps have been recently added to FreeBSD.
+
+  In documenting current dump code it occurred to the author and his
+  colleagues that the BSD dump code is not an unchanging relic, but a living
+  breathing artifact that can be traced directly back to UNIX's birth.
+  Hopefully the information herein is of use to inform furthur work on core
+  dumps, failing that we hope it is interesting.
 
 * Background
+** Core Dump Contents
   # - Canonical BSD Unix core memory dumping: All memory to a
   #      pre-designated device
   #   - 64kb indent, starts dumping at END of dump dev in case you
@@ -219,61 +264,64 @@ work on encrypted dumping may resolve.
   #   - Backtrace.io paper here
   # https://backtrace.io/blog/improving-freebsd-kernel-debugging/
 
-When a UNIX-like system such as FreeBSD encounters an unrecoverable and
-unexpected error the kernel will "panic". Though the word panic has connotations
-of irrationality, the function =panic(9)= maintains composure while it
-"[terminates] the running system" and "[attempts] to save a core dump" to a
-configured dump device. [2] Core dumps, sometimes known as crash dumps are
-used to debug system failures. Crash dumps are "a copy of memory that is saved
-on secondary storage by the kernel when a catastrophic failure occurs." [1]
-What follows is a thorough description of the FreeBSD core dump routine starting
-with =doadump()= in =sys/kern/kern_shutdown.c=. The FreeBSD operating system
-source code can be checked out using subversion by following the FreeBSD
-handbook instructions [3].
+** Modern Core Dump Procedure
+
+  When a UNIX-like system such as FreeBSD encounters an unrecoverable and
+  unexpected error the kernel will "panic". Though the word panic has connotations
+  of irrationality, the function =panic(9)= maintains composure while it
+  "[terminates] the running system" and "[attempts] to save a core dump" to a
+  configured dump device. [2] Core dumps, sometimes known as crash dumps are
+  used to debug system failures. Crash dumps are "a copy of memory that is saved
+  on secondary storage by the kernel when a catastrophic failure occurs." [1]
+  What follows is a thorough description of the FreeBSD core dump routine starting
+  with =doadump()= in =sys/kern/kern_shutdown.c=. The FreeBSD operating system
+  source code can be checked out using subversion by following the FreeBSD
+  handbook instructions [3].
 
 
-=doadump()= is called by =kern_reboot()=, which shutsdown "the system cleanly to
-prepare for reboot, halt, or power off." [4] =kern_reboot()= calls
-=doadump()= if the =RB_DUMP= flag is set and the system is not "cold" or already
-creating a core dump. =doadump()= takes a boolean informing it to whether or not
-to take a "text dump", a form of dump carried out if the online kernel debugger,
-=DDB=, is built into the running kernel. =doaddump()= returns an error code if
-the system is currently creating a dump, the dumper is NULL and returns error
-codes on behalf of =dumpsys()=.
+  =doadump()= is called by =kern_reboot()=, which shutsdown "the system cleanly to
+  prepare for reboot, halt, or power off." [4] =kern_reboot()= calls
+  =doadump()= if the =RB_DUMP= flag is set and the system is not "cold" or already
+  creating a core dump. =doadump()= takes a boolean informing it to whether or not
+  to take a "text dump", a form of dump carried out if the online kernel debugger,
+  =DDB=, is built into the running kernel. =doaddump()= returns an error code if
+  the system is currently creating a dump, the dumper is NULL and returns error
+  codes on behalf of =dumpsys()=.
 
-=doadump(boolean_t textdump)= starts the core dump procedure by saving the
-current context with a call to =savectx()= and then invokes a core dump using
-=dumpsys()=, passing it a =struct dumper= and optionally a "text dump" which is
-carried out if the online kernel debugger, =DDB=, is built into the running
-kernel.
+  =doadump(boolean_t textdump)= starts the core dump procedure by saving the
+  current context with a call to =savectx()= and then invokes a core dump using
+  =dumpsys()=, passing it a =struct dumper= and optionally a "text dump" which is
+  carried out if the online kernel debugger, =DDB=, is built into the running
+  kernel.
 
-=dumpsys()= is defined on a per-architecture basis. This allows different
-architectures to setup their dump structure differently. =dumpsys()= calls
-=dumpsys_generic()= passing along the =struct dumperinfo= it was called with.
-=dumpsys_generic()= is defined in =sys/kern/kern_dump.c= and is the meat of the
-core dump procedure.
+  =dumpsys()= is defined on a per-architecture basis. This allows different
+  architectures to setup their dump structure differently. =dumpsys()= calls
+  =dumpsys_generic()= passing along the =struct dumperinfo= it was called with.
+  =dumpsys_generic()= is defined in =sys/kern/kern_dump.c= and is the meat of the
+  core dump procedure.
 
-There are several main steps to the dumping procedure. The main steps are as
-follows. At any point if there is an error condition, goto failure cleanup at
-the end of the procedure.
+  There are several main steps to the dumping procedure. The main steps are as
+  follows. At any point if there is an error condition, goto failure cleanup at
+  the end of the procedure.
 
-1. Fill in the ELF header.
-2. Calculate the dump size.
-3. Determine if the dump device is large enough.
-4. Begin Dump
-   1. Leader (Padding)
-   2. ELF Header
-   3. Program Headers
-   4. Memory Chunks
-   5. Trailer
-5. End Dump
+  1. Fill in the ELF header.
+  2. Calculate the dump size.
+  3. Determine if the dump device is large enough.
+  4. Begin Dump
+     1. Leader (Padding)
+     2. ELF Header
+     3. Program Headers
+     4. Memory Chunks
+     5. Trailer
+  5. End Dump
 
 * History
 
 ** Core Dumps in UNIX
-*** Research UNIX Version 5
+*** 5th Edition UNIX
     =usr/sys/conf/mch.s=
 
+**** =/usr/sys/conf/mch.s=                                         :noexport:
 # https://github.com/dspinellis/unix-history-repo/blob/Research-V5-Snapshot-Development/usr/sys/conf/mch.s#L826
 
     #+BEGIN_SRC asm
@@ -306,50 +354,52 @@ dump:
 	mov	$60007,-(r0)
 	br	.
     #+END_SRC
-*** Research UNIX Version 6
-=/usr/sys/conf/m40.s=
-# https://github.com/dspinellis/unix-history-repo/blob/Research-V6-Snapshot-Development/usr/sys/conf/m40.s
+*** 6th Edition UNIX
+    =/usr/sys/conf/m40.s=
+**** =/usr/sys/conf/m40.s=                                         :noexport:
+    # https://github.com/dspinellis/unix-history-repo/blob/Research-V6-Snapshot-Development/usr/sys/conf/m40.s
     #+BEGIN_SRC asm
-.globl	dump
-dump:
-	bit	$1,SSR0
-	bne	dump
-
-/ save regs r0,r1,r2,r3,r4,r5,r6,KIA6
-/ starting at abs location 4
-
-	mov	r0,4
-	mov	$6,r0
-	mov	r1,(r0)+
-	mov	r2,(r0)+
-	mov	r3,(r0)+
-	mov	r4,(r0)+
-	mov	r5,(r0)+
-	mov	sp,(r0)+
-	mov	KISA6,(r0)+
-
-/ dump all of core (ie to first mt error)
-/ onto mag tape. (9 track or 7 track 'binary')
-
-	mov	$MTC,r0
-	mov	$60004,(r0)+
-	clr	2(r0)
-1:
-	mov	$-512.,(r0)
-	inc	-(r0)
-2:
-	tstb	(r0)
-	bge	2b
-	tst	(r0)+
-	bge	1b
-	reset
-
-/ end of file and loop
-
-	mov	$60007,-(r0)
-	br	.
+    .globl	dump
+    dump:
+    	bit	$1,SSR0
+    	bne	dump
+    
+    / save regs r0,r1,r2,r3,r4,r5,r6,KIA6
+    / starting at abs location 4
+    
+    	mov	r0,4
+    	mov	$6,r0
+    	mov	r1,(r0)+
+    	mov	r2,(r0)+
+    	mov	r3,(r0)+
+    	mov	r4,(r0)+
+    	mov	r5,(r0)+
+    	mov	sp,(r0)+
+    	mov	KISA6,(r0)+
+    
+    / dump all of core (ie to first mt error)
+    / onto mag tape. (9 track or 7 track 'binary')
+    
+    	mov	$MTC,r0
+    	mov	$60004,(r0)+
+    	clr	2(r0)
+    1:
+    	mov	$-512.,(r0)
+    	inc	-(r0)
+    2:
+    	tstb	(r0)
+    	bge	2b
+    	tst	(r0)+
+    	bge	1b
+    	reset
+    
+    / end of file and loop
+    
+    	mov	$60007,-(r0)
+    	br	.
     #+END_SRC
 
+**** =/usr/sys/conf/m45.s=                                         :noexport:
 =/usr/sys/conf/m45.s=
 # https://github.com/dspinellis/unix-history-repo/blob/Research-V6-Snapshot-Development/usr/sys/conf/m45.s#L21
 #+BEGIN_SRC asm
@@ -398,7 +448,8 @@ dump:
 	mov	$60007,-(r0)
 	br	.
 #+END_SRC
-*** Research UNIX v7
+*** 7th Edition UNIX
+**** =/usr/sys/conf/mch.s=                                         :noexport:
 # https://github.com/dspinellis/unix-history-repo/blob/Research-V7-Snapshot-Development/usr/sys/conf/mch.s#L26
 =/usr/sys/conf/mch.s=
 #+BEGIN_SRC asm
@@ -477,6 +528,7 @@ MTC = 172522
 #+END_SRC
 
 *** Bell 32/V
+**** =/usr/src/sys/sys/locore.s=                                   :noexport:
 # https://github.com/dspinellis/unix-history-repo/blob/Bell-32V-Snapshot-Development/usr/src/sys/sys/locore.s#L158
 =/usr/src/sys/sys/locore.s=
 #+BEGIN_SRC asm
@@ -509,7 +561,7 @@ dumpstack:
     - Uses v6 dump code
 *** 3BSD
     # https://github.com/dspinellis/unix-history-repo/blob/BSD-3-Snapshot-Development/usr/src/sys/sys/locore.s#L174
-    =/usr/src/sys/sys/locore.s=
+**** =/usr/src/sys/sys/locore.s=                                   :noexport:
     =doadump=
     #+BEGIN_SRC asm
 # =====================================
@@ -579,26 +631,29 @@ Beginning in 4.1BSD =doadump= was re-written in C for the VAX and placed in
 # TODO Talk here about added architectures? Pretty much everything is the same
 # from here on out just added architectures
 
-** =netdump=
-
-# add netdump history?
-    # - Netdumps
-    #   - Duke University code from long ago
-    #   - Picked up by Ed Maste at Sandvine, dropped
-    #   - Picked up by Isilon
-    #     - Added compression code? Picked it up
-    #   - Modular...
-*** OS X Kernel Dump
+** Core Dumps in Mac OS X
     # https://github.com/opensource-apple/xnu/blob/27ffc00f33925b582391b1ef318b78b8bd3939d1/osfmk/kdp/kdp_core.c#L491
     =osfmk/kdp/kdp_core.c=
     - gzipped
     - net dump using kdumpd
       # https://opensource.apple.com/source/network_cmds/network_cmds-396.6/kdumpd.tproj/
+** BSD Core Dump Extensions
+*** =netdump= - Network Dump
 
-** Compresssed Dump
-** Encrypted Dump
-    # - Encryption - landed in head 12/10/2016 (Verify)
+ # add netdump history?
+     # - Netdumps
+     #   - Duke University code from long ago
+     #   - Picked up by Ed Maste at Sandvine, dropped
+     #   - Picked up by Isilon
+     #     - Added compression code? Picked it up
+     #   - Modular...
 
+*** Compresssed Dump
+*** Encrypted Dump
+     # - Encryption - landed in head 12/10/2016 (Verify)
+*** =minidumpsz= - Minidump Size Estimation
+
+* Conclusion
 
 * References
 
