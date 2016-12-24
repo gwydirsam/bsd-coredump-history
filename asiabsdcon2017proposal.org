@@ -117,6 +117,22 @@ doadump:
       - No performance penalty but...
       - Security risk with the CTRL-ALT-ESC shortcut
         - Can be disabled at compile time, FreeNAS does this
+- "No, as I recall on an IBM 360 you could pick line printer or punched cards... lol"
+- It may be worth looking at the games Linux plays. Reserve space for a kernel, load that kernel...
+- Perhaps: Paper -> Tape -> Swap -> New fancy stuff.
+- "https://en.wikipedia.org/wiki/Core_dump    The background starts off with core dumps were paper printouts[6]... "
+- So here’s Bell 32/V doadump: https://github.com/dspinellis/unix-history-repo/blob/Bell-32V-Snapshot-Development/usr/src/sys/sys/locore.s
+- "IIRC many systems from the early 70's and before did crash dumps to printer.  I am not sure when the idea of saving the bits in a machine readable form for analisys after coming back up  started."
+- [12/23/16, 16:02:56] Michael Dexter: "Well in 1979 I can remeber doing a crash dump on a Harris S/210 24 bit machine to the line printer in octal, it only took 2 hours to print...."
+[12/23/16, 16:03:35] gwydirsam: -rgrimes?
+- From Rod: "[12/23/16 1:51:05 PM] Rodney Grimes: I would say dumps to swap/page area was soon to come:   7. Reboot fixups
+ Support automatic dumps to paging area
+[12/23/16 1:51:24 PM] Rodney Grimes: That is on a list of TODO's in https://github.com/dspinellis/unix-history-repo/blob/BSD-4-Snapshot-Development/usr/src/sys/sys/TODO "
+- multics
+  - http://multicians.org/mgf.html#fdump
+- OS X dump server
+- https://developer.apple.com/library/content/technotes/tn2004/tn2118.html
+- 
 - FreeBSD Dumping Future
   - Netdumps
   - Compressed Dumps
@@ -254,7 +270,287 @@ the end of the procedure.
 
 * History
 
+** Core Dumps in UNIX
+*** Research UNIX Version 5
+    =usr/sys/conf/mch.s=
+
+# https://github.com/dspinellis/unix-history-repo/blob/Research-V5-Snapshot-Development/usr/sys/conf/mch.s#L826
+
+    #+BEGIN_SRC asm
+.globl	dump
+dump:
+	mov	$4,r0	/ overwrites trap vectors
+	mov	r1,(r0)+
+	mov	r2,(r0)+
+	mov	r3,(r0)+
+	mov	r4,(r0)+
+	mov	r5,(r0)+
+	mov	sp,(r0)+
+	mov	$KISA0,r1
+	mov	$8.,r2
+1:
+	mov	(r1)+,(r0)+
+	sob	r2,1b
+	mov	$MTC,r0
+	mov	$60004,(r0)+
+	clr	2(r0)
+1:
+	mov	$-512.,(r0)
+	inc	-(r0)
+2:
+	tstb	(r0)
+	bge	2b
+	tst	(r0)+
+	bge	1b
+	5
+	mov	$60007,-(r0)
+	br	.
+    #+END_SRC
+*** Research UNIX Version 6
+=/usr/sys/conf/m40.s=
+# https://github.com/dspinellis/unix-history-repo/blob/Research-V6-Snapshot-Development/usr/sys/conf/m40.s
+    #+BEGIN_SRC asm
+.globl	dump
+dump:
+	bit	$1,SSR0
+	bne	dump
+
+/ save regs r0,r1,r2,r3,r4,r5,r6,KIA6
+/ starting at abs location 4
+
+	mov	r0,4
+	mov	$6,r0
+	mov	r1,(r0)+
+	mov	r2,(r0)+
+	mov	r3,(r0)+
+	mov	r4,(r0)+
+	mov	r5,(r0)+
+	mov	sp,(r0)+
+	mov	KISA6,(r0)+
+
+/ dump all of core (ie to first mt error)
+/ onto mag tape. (9 track or 7 track 'binary')
+
+	mov	$MTC,r0
+	mov	$60004,(r0)+
+	clr	2(r0)
+1:
+	mov	$-512.,(r0)
+	inc	-(r0)
+2:
+	tstb	(r0)
+	bge	2b
+	tst	(r0)+
+	bge	1b
+	reset
+
+/ end of file and loop
+
+	mov	$60007,-(r0)
+	br	.
+    #+END_SRC
+
+=/usr/sys/conf/m45.s=
+# https://github.com/dspinellis/unix-history-repo/blob/Research-V6-Snapshot-Development/usr/sys/conf/m45.s#L21
+#+BEGIN_SRC asm
+/ Mag tape dump
+/ save registers in low core and
+/ write all core onto mag tape.
+/ entry is thru 44 abs
+
+.data
+.globl	dump
+dump:
+	bit	$1,SSR0
+	bne	dump
+
+/ save regs r0,r1,r2,r3,r4,r5,r6,KIA6
+/ starting at abs location 4
+
+	mov	r0,4
+	mov	$6,r0
+	mov	r1,(r0)+
+	mov	r2,(r0)+
+	mov	r3,(r0)+
+	mov	r4,(r0)+
+	mov	r5,(r0)+
+	mov	sp,(r0)+
+	mov	KDSA6,(r0)+
+
+/ dump all of core (ie to first mt error)
+/ onto mag tape. (9 track or 7 track 'binary')
+
+	mov	$MTC,r0
+	mov	$60004,(r0)+
+	clr	2(r0)
+1:
+	mov	$-512.,(r0)
+	inc	-(r0)
+2:
+	tstb	(r0)
+	bge	2b
+	tst	(r0)+
+	bge	1b
+	reset
+
+/ end of file and loop
+
+	mov	$60007,-(r0)
+	br	.
+#+END_SRC
+*** Research UNIX v7
+# https://github.com/dspinellis/unix-history-repo/blob/Research-V7-Snapshot-Development/usr/sys/conf/mch.s#L26
+=/usr/sys/conf/mch.s=
+#+BEGIN_SRC asm
+/ Mag tape dump
+/ save registers in low core and
+/ write all core onto mag tape.
+/ entry is thru 44 abs
+
+.data
+.globl	dump
+dump:
+
+/ save regs r0,r1,r2,r3,r4,r5,r6,KIA6
+/ starting at abs location 4
+
+	mov	r0,4
+	mov	$6,r0
+	mov	r1,(r0)+
+	mov	r2,(r0)+
+	mov	r3,(r0)+
+	mov	r4,(r0)+
+	mov	r5,(r0)+
+	mov	sp,(r0)+
+	mov	KDSA6,(r0)+
+
+/ dump all of core (ie to first mt error)
+/ onto mag tape. (9 track or 7 track 'binary')
+
+.if HTDUMP
+	mov	$HTCS1,r0
+	mov	$40,*$HTCS2
+	mov	$2300,*$HTTC
+	clr	*$HTBA
+	mov	$1,(r0)
+1:
+	mov	$-512.,*$HTFC
+	mov	$-256.,*$HTWC
+	movb	$61,(r0)
+2:
+	tstb	(r0)
+	bge	2b
+	bit	$1,(r0)
+	bne	2b
+	bit	$40000,(r0)
+	beq	1b
+	mov	$27,(r0)
+.endif
+HT	= 0172440
+HTCS1	= HT+0
+HTWC	= HT+2
+HTBA	= HT+4
+HTFC	= HT+6
+HTCS2	= HT+10
+HTTC	= HT+32
+
+MTC = 172522
+.if TUDUMP
+	mov	$MTC,r0
+	mov	$60004,(r0)+
+	clr	2(r0)
+1:
+	mov	$-512.,(r0)
+	inc	-(r0)
+2:
+	tstb	(r0)
+	bge	2b
+	tst	(r0)+
+	bge	1b
+	reset
+
+/ end of file and loop
+
+	mov	$60007,-(r0)
+.endif
+	br	.
+#+END_SRC
+
+*** Bell 32/V
+# https://github.com/dspinellis/unix-history-repo/blob/Bell-32V-Snapshot-Development/usr/src/sys/sys/locore.s#L158
+=/usr/src/sys/sys/locore.s=
+#+BEGIN_SRC asm
+#  0x200
+# Produce a core image dump on mag tape
+	.globl	doadump
+doadump:
+	movl	sp,dumpstack	# save stack pointer
+	movab	dumpstack,sp	# reinit stack
+	mfpr	$PCBB,-(sp)	# save u-area pointer
+	mfpr	$MAPEN,-(sp)	# save value
+	mfpr	$IPL,-(sp)	# ...
+	mtpr	$0,$MAPEN		# turn off memory mapping
+	mtpr	$HIGH,$IPL		# disable interrupts
+	pushr	$0x3fff			# save regs 0 - 13
+	calls	$0,_dump	# produce dump
+	halt
+
+	.data
+	.align	2
+	.globl	dumpstack
+	.space	58*4		# seperate stack for tape dumps
+dumpstack: 
+	.space	4
+	.text
+#+END_SRC
+
 ** Core Dumps in BSD
+*** 1BSD & 2BSD
+    - Uses v6 dump code
+*** 3BSD
+    # https://github.com/dspinellis/unix-history-repo/blob/BSD-3-Snapshot-Development/usr/src/sys/sys/locore.s#L174
+    =/usr/src/sys/sys/locore.s=
+    =doadump=
+    #+BEGIN_SRC asm
+# =====================================
+# Produce a core image dump on mag tape
+# =====================================
+	.globl	doadump
+doadump:
+	movl	sp,dumpstack		# save stack pointer
+	movab	dumpstack,sp		# reinit stack
+	mfpr	$PCBB,-(sp)		# save u-area pointer
+	mfpr	$MAPEN,-(sp)		# save value
+	mfpr	$IPL,-(sp)		# ...
+	mtpr	$0,$MAPEN		# turn off memory mapping
+	mtpr	$HIGH,$IPL		# disable interrupts
+	pushr	$0x3fff			# save regs 0 - 13
+	calls	$0,_dump		# produce dump
+	halt
+
+	.data
+	.align	2
+	.globl	dumpstack
+	.space	58*4			# separate stack for tape dumps
+dumpstack: 
+	.space	4
+	.text
+    #+END_SRC
+*** 4BSD
+    # https://github.com/dspinellis/unix-history-repo/blob/BSD-4-Snapshot-Development/usr/src/sys/sys/locore.s#L174
+    - add trace information with _dumptrc
+    # https://github.com/dspinellis/unix-history-repo/blob/BSD-4-Snapshot-Development/usr/src/sys/sys/TODO#L28
+    - First talk of dump to swap in =/usr/src/sys/sys/TODO=
+*** 4.1c2BSD
+    # https://github.com/dspinellis/unix-history-repo/blob/BSD-4_1c_2-Snapshot-Development/a/sys/vax/Locore.c#L36
+    - doadump calls dumpsys and is all in C now
+*** 4.1BSD
+    # https://github.com/dspinellis/unix-history-repo/blob/BSD-4_1_snap-Snapshot-Development/sys/sys/Locore.c#L32
+    - Back to asm? Actually I might be wrong, it might be a C/asm hybrid right now
+    # https://github.com/dspinellis/unix-history-repo/blob/BSD-4_1_snap-Snapshot-Development/sys/GENERIC/locore.c#L112
+*** 4.2BSD
+    # https://github.com/dspinellis/unix-history-repo/blob/BSD-4_1_snap-Snapshot-Development/sys/sys/Locore.c#L32
+
 
 The following is a quick history of core dumps in the BSD operating systems
 tracing from before the advent of =doadump= in 3BSD through to the present and a
@@ -292,6 +588,12 @@ Beginning in 4.1BSD =doadump= was re-written in C for the VAX and placed in
     #   - Picked up by Isilon
     #     - Added compression code? Picked it up
     #   - Modular...
+*** OS X Kernel Dump
+    # https://github.com/opensource-apple/xnu/blob/27ffc00f33925b582391b1ef318b78b8bd3939d1/osfmk/kdp/kdp_core.c#L491
+    =osfmk/kdp/kdp_core.c=
+    - gzipped
+    - net dump using kdumpd
+      # https://opensource.apple.com/source/network_cmds/network_cmds-396.6/kdumpd.tproj/
 
 ** Compresssed Dump
 ** Encrypted Dump
