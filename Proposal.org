@@ -1,0 +1,1290 @@
+#+OPTIONS: ':t *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline author:t c:nil
+#+OPTIONS: creator:nil d:(not "LOGBOOK") date:t e:t email:nil f:t inline:t
+#+OPTIONS: num:t p:nil pri:nil prop:nil stat:t tags:t tasks:t tex:t timestamp:t
+#+OPTIONS: title:t toc:nil todo:t |:t
+#+TITLE: The History and Future of Core Dumps in FreeBSD
+
+#+DATE: \today
+#+AUTHOR: Sam W. Gwydir, Texas A&M University =sam@samgwydir.com=
+#+EMAIL: sam@samgwydir.com
+#+LANGUAGE: en
+#+SELECT_TAGS: export
+#+EXCLUDE_TAGS: noexport
+#+CREATOR: Emacs 25.1.1 (Org mode 8.3.5)
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS: [a4paper,article,twocolumn]
+#+LATEX_HEADER_EXTRA:
+#+DESCRIPTION:
+#+KEYWORDS:
+#+SUBTITLE:
+
+
+#+BEGIN_COMMENT
+
+#* SUBMIT TO: secretary@asiabsdcon.org
+#* EMAIL:
+#** Paper title 
+#   The History and Future of Core Dumps in FreeBSD
+#** Abstract
+#** Names and affiliations of the authors
+#   Sam Gwydir - Texas A&M University
+#** Name of the speaker and whether a visa application is required or not to visit Japan
+#   Sam Gwydir, No -- I'm a United States citizen.
+#** Estimation of your travel expense
+#  |---------------+------------|
+#  | Item          | Cost (USD) |
+#  |---------------+------------|
+#  | Plane Tickets |    1842.26 |
+#  | Hotel         |     596.94 |
+#  |---------------+------------|
+#  |---------------+------------|
+#  | Total         |   2,439.20 |
+#  |               |            |
+#  |---------------+------------|
+#** Contact email address
+#   sam@samgwydir.com
+
+
+- There is a significant problem being solved or a real world experience being demonstrated.
+- There is active work being done.
+- There is enough progress to make a complete written submission.
+- There is data proving either the success or failure of any claims.
+
+-Questions
+
+Q: Are we going to focus on amd64 and x86?
+
+Outline
+- What is a core dump?
+- System 6
+- Crash(8)
+If the reason for the crash is not evident
+(see below for guidance on `evident')
+you may want to try to dump the system if you feel up to
+debugging.
+At the moment a dump can be taken only on magtape.
+With a tape mounted and ready,
+stop the machine, load address 44, and start.
+This should write a copy of all of core
+on the tape with an EOF mark.
+
+- 3BSD
+added to crash(8) in 3BSD: (Someday the LSI-11 will do this automatically.)
+
+root@freebsd-current:~/src/unix-history-repo # git branch
+  BSD-3-Snapshot-Development
+root@freebsd-current:~/src/unix-history-repo # git log usr/src/sys/sys/locore.s
+commit 78bb3f5f916ebc2ee66d7dbfbe93db9a97e6d3ca
+Author: Ozalp Babaoglu <ozalp@ucbvax.Berkeley.EDU>
+Date:   Wed Jan 16 00:08:32 1980 -0800
+
+    BSD 3 development
+    Work on file usr/src/sys/sys/locore.s
+
+    Co-Authored-By: Bill Joy <wnj@ucbvax.Berkeley.EDU>
+    Co-Authored-By: Juan Porcar <x-jp@ucbvax.Berkeley.EDU>
+    Synthesized-from: 3bsd
+root@freebsd-current:~/src/unix-history-repo # grep -A20 doadump usr/src/sys/sys/locore.s
+	.globl	doadump
+doadump:
+	movl	sp,dumpstack		# save stack pointer
+	movab	dumpstack,sp		# reinit stack
+	mfpr	$PCBB,-(sp)		# save u-area pointer
+	mfpr	$MAPEN,-(sp)		# save value
+	mfpr	$IPL,-(sp)		# ...
+	mtpr	$0,$MAPEN		# turn off memory mapping
+	mtpr	$HIGH,$IPL		# disable interrupts
+	pushr	$0x3fff			# save regs 0 - 13
+	calls	$0,_dump		# produce dump
+	halt
+
+	.data
+	.align	2
+	.globl	dumpstack
+	.space	58*4			# separate stack for tape dumps
+- 4.2BSD
+  - /usr/src/sys/vax/vax/machdep.c
+  - doadump and dumpsys
+  - 'doadump() { dumpsys(); }'
+- FreeBSD Dumping History
+  - The Design and Implementation of FreeBSD
+  - Canonical BSD Unix core memory dumping: All memory to a
+       pre-designated device
+    - 64kb indent, starts dumping at END of dump dev in case you
+         start swapping early in boot before you retrieve the dump.
+         4.2BSD?
+    - kern/kern\_shutdown.c (Traditional)
+- FreeBSD Dumping Present
+  - Dumps on machines with 300 GB of RAM+ can be huge
+    - Swap partitions need not be so large for any other reason
+  - Updated FreeBSD dumping
+    - 64kb indent, dump from end preserved (verify)
+      - sys/kern/kern\_dump.c
+      - sys/kern/kern\_shutdown.c
+      - sys/amd64/amd64/machdep\_minidump.c
+      - and rarely bits might be in sys/amd64/amd64/pmap.c
+    - “Minidumps” of only active kernel pages
+    - Dump time DDB scripting
+      - Useful if you don't have a dump device
+      - DDB must be built into the kernel
+      - No performance penalty but...
+      - Security risk with the CTRL-ALT-ESC shortcut
+        - Can be disabled at compile time, FreeNAS does this
+- "No, as I recall on an IBM 360 you could pick line printer or punched cards... lol"
+- It may be worth looking at the games Linux plays. Reserve space for a kernel, load that kernel...
+- Perhaps: Paper -> Tape -> Swap -> New fancy stuff.
+- "https://en.wikipedia.org/wiki/Core_dump    The background starts off with core dumps were paper printouts[6]... "
+- So here’s Bell 32/V doadump: https://github.com/dspinellis/unix-history-repo/blob/Bell-32V-Snapshot-Development/usr/src/sys/sys/locore.s
+- "IIRC many systems from the early 70's and before did crash dumps to printer.  I am not sure when the idea of saving the bits in a machine readable form for analisys after coming back up  started."
+- [12/23/16, 16:02:56] Michael Dexter: "Well in 1979 I can remeber doing a crash dump on a Harris S/210 24 bit machine to the line printer in octal, it only took 2 hours to print...."
+[12/23/16, 16:03:35] gwydirsam: -rgrimes?
+- From Rod: "[12/23/16 1:51:05 PM] Rodney Grimes: I would say dumps to swap/page area was soon to come:   7. Reboot fixups
+ Support automatic dumps to paging area
+[12/23/16 1:51:24 PM] Rodney Grimes: That is on a list of TODO's in https://github.com/dspinellis/unix-history-repo/blob/BSD-4-Snapshot-Development/usr/src/sys/sys/TODO "
+- multics
+  - http://multicians.org/mgf.html#fdump
+- OS X dump server
+- https://developer.apple.com/library/content/technotes/tn2004/tn2118.html
+- 
+- FreeBSD Dumping Future
+  - Netdumps
+  - Compressed Dumps
+  - Encrypted Dumps
+  - New features at various stages of integration
+    - Netdumps
+      - Duke University code from long ago
+      - Picked up by Ed Maste at Sandvine, dropped
+      - Picked up by Isilon
+        - Added compression code? Picked it up
+      - Modular...
+    - Encryption - landed in head 12/10/2016 (Verify)
+
+#+END_COMMENT
+
+\begin{abstract}
+
+Crash dumps, also known as core dumps, have been a part of BSD since it's
+beginnings in UNIX. A core dump is ``a copy of memory that is saved on secondary
+storage by the kernel'' for debugging a system failure. Though 38 years have
+passed since =doadump= came about in Bell 32/V, core dumps are still needed and
+utilized in much the same way they were then. Given this one might assume the
+core dump code changed little over time but this assumption did not prove
+correct.
+
+What has changed over time is where core dumps are sent to and what processor
+architectures are supported. Previous to UNIX, core dumps were printed to a line
+printer or punch cards. At the birth of UNIX core dumps were made to magnetic
+tape and because UNIX supported only the PDP-11, it was the only architecture
+supported for dumps. Over time the specific dump device has changed from tape,
+to hard disk and even over the network to a remote machine. In addition, machine
+architecture support has evolved from different PDP-11 models to hp300, i386 up
+to the present day with amd64 and ARM.
+
+The following paper begins with a quick background on what core dumps are and
+why operators might need them. Following that a complete history of core dumps
+in UNIX and BSD is produced, the current state of the core dump facility and
+some of the more common extensions in use. We conclude with a call to action for
+modularizing the core dump code such that different methods of core dump can be
+dynamically loaded into the kernel on demand.
+
+# # In addition a call to action will
+# # be made for modularizing the core dump code.
+
+\end{abstract}
+
+* Introduction
+
+  The BSD core dump facility performs a simple yet vital service to the operator:
+  preserving a copy of the contents of system memory at the time of a fatal error
+  for later debugging. 
+
+# This copy or ``dump'' can be a machine readable form of the
+#   contents of system memory, the set of kernel pages that are active at the
+#   time of the crash, or a less complete but human readable form using debugger
+#   scripting.
+
+  Throughout the history of UNIX operating systems, different methods have been
+  used to produce a core dump. The earliest (pre UNIX) core dumps were made
+  directly to a line printer, taking some hours to print. In the earliest UNIXes
+  magnetic tape was the only supported dump device but when hard disks support
+  matured swap space was used, obviating the need for changing out tapes before
+  a dump. Modern and embedded systems continue to introduce new constraints that
+  have motivated the need for newer methods of ex-filtrating a core dump from a
+  faltering kernel.
+
+# according to crash(8)
+
+  # "Well in 1979 I can remeber doing a crash dump on a Harris S/210 24 bit
+  # machine to the line printer in octal, it only took 2 hours to print...." - rgrimes
+  # https://en.wikipedia.org/wiki/Core_dump#cite_note-6
+
+  The FreeBSD variant of the BSD operating system has introduced gradual
+  extensions to the core dumping facility. FreeBSD 6.2 introduced ``minidumps'',
+  a subset of a full dump that only consists of active kernel memory . FreeBSD
+  7.1's =textdumps(4)= consist of the result of debugger scripting at the time
+  of =panic(9)=. In FreeBSD 12 CURRENT public-key cryptographic encryption has
+  introduced support for core dumps. Though not in the main source tree,
+  compressed dumps and the ability to dump to a remote network device exist and
+  function. While promising, these extensions have been inconsistent in their
+  integration and interoperability. Notably, Mac OS X has also introduced
+  similar compression and network dumping features into their kernel albeit
+  with a distinct pedigree from FreeBSD.
+
+  # note Peter Wemm introduced minidumps 2006
+  # note Robert Watson introduced text dumps 2007?
+  # note def introduced encrypted dump 2016 https://reviews.freebsd.org/D4712
+  # apple dumps
+  # https://developer.apple.com/library/content/technotes/tn2004/tn2118.html
+
+  # (And if we're
+  # lucky, some news about dump procedures relating to hibernation and virtual
+  # machine migration!)
+
+  The following paper will provide a historical survey of the dump facility
+  itself, from its' introduction in UNIX to its' current form in modern
+  BSDs and BSD derived operating systems. We will also explore these core dump
+  extensions, associated tools, and describe an active effort to fully modularize
+  them, allowing the operator to enable one or more of them simultaneously.
+
+  # It will also address
+  # related utilities to determine the size of a dump in advance 
+
+  # What do can we say about textdumps?
+  # and kernel debugger
+  # (DDB) scripting options.
+
+
+* Motivation
+
+  In UNIX and early BSD's core dumps were originally made to magnetic
+  tape which was superseded by dumping to a swap partition on a hard disk
+  since at least 3BSD. For decades since, increases in physical system memory
+  and swap partition size have loosely tracked increases in available persistent
+  memory, allowing for the continued use of this paradigm.
+
+  # Since 4.1BSD, an
+  # operator would allocate a region on disk to a ``dumpdev'' that is equal to
+  # physical system memory plus a small buffer. 
+
+  However, recent advances in commodity system hardware have upended the
+  traditional memory to disk space ratio with systems now routinely utilizing
+  1TB or more physical memory whilst running on less than 256GB of solid state
+  disk. Given that the kernel memory footprint has grown in size, the assumption
+  that disk space would always allow for a swap partition large enough for a
+  core dump has proved to be inaccurate. This change has spurred development of
+  several extensions to the core dumping facility, including compressed dumping
+  to swap and dumping over the network to a server with disk space for modern
+  core dumps. Because dumps contain all the contents of memory any sensitive
+  information in flight at the time of a crash appears in the dump. For this
+  reason and others encrypted dumps have been recently added to FreeBSD.
+
+  In documenting current dump code it occurred to the author and his
+  colleagues that the BSD dump code is not an unchanging relic, but a living
+  breathing artifact that can be traced directly back to UNIX's birth.
+  Hopefully the information herein is of use to inform further work on core
+  dumps, failing that we hope it is interesting.
+
+* Background
+** Full Dump Contents
+   The canonical form of core dump is the "full dump". Full dumps are created
+   via the =doadump()= code path which starts in =sys/kern/kern_shutdown.c=. The
+   resulting dump is an ELF formatted binary written to a configured swap
+   partition. The following is based on x86 and amd64 code and is the result of
+   =dumpsys_generic()=. This will be similar in format but different values for
+   different architectures.
+
+   #+CAPTION: Full Dump Format
+   #+NAME:   tab:dumpformat
+   #+ATTR_LATEX: :float nil :placement {p}
+   |---+-----------------+-----------------------------|
+   |   | Field           | Description                 |
+   |---+-----------------+-----------------------------|
+   | / | >              | <                          |
+   |   | Leader          | See Table [[tab:kdhheader]] |
+   |   | ELF Header      | See Table [[tab:elfheader]] |
+   |   | Program Headers |                             |
+   |   | Memory Chunks   |                             |
+   |   | Trailer         | See Table [[tab:kdhheader]] |
+   |---+-----------------+-----------------------------|
+
+   #+CAPTION: =kerneldumpheader= Format
+   #+NAME:   tab:kdhheader
+   #+ATTR_LATEX: :float nil :placement {p}
+   |---+---------------------+----------------------------|
+   |   | Field               | Value                      |
+   |---+---------------------+----------------------------|
+   | / | >                   | <                          |
+   |   | magic               | "FreeBSD Kernel Dump"      |
+   |   | architecture        | "amd64"                    |
+   |   | version             | 1 (kdh format version)     |
+   |   | architectureversion | 2                          |
+   |   | dumplength          | varies, excluding headers |
+   |   | dumptime            | current time              |
+   |   | blocksize           | block size                |
+   |   | hostname            | hostname                  |
+   |   | versionstring       | version of OS             |
+   |   | panicstring         | message given to =panic(9)= |
+   |   | parity              | parity bits               |
+   |---+---------------------+----------------------------|
+   # |---+---------------------|-----------------------------------|
+   # |   | Field               | Value                             |
+   # |---+---------------------|-----------------------------------|
+   # | / | <>                  |                                   |
+   # |   | magic               | "FreeBSD Kernel Dump"             |
+   # |   | architecture        | "amd64"                           |
+   # |   | version             | 1 (version of kernel dump format) |
+   # |   | architectureversion | 2                                 |
+   # |   | dumplength          | (varies, excluding headers)        |
+   # |   | dumptime            | (current time)                     |
+   # |   | blocksize           | (block size)                       |
+   # |   | hostname            | (hostname)                         |
+   # |   | versionstring       |                                   |
+   # |   | panicstring         |                                   |
+   # |   | parity              | (parity bits)                      |
+   # |---+---------------------|-----------------------------------|
+   # |---+---------------------|
+   # |   | Field               |
+   # |---+---------------------|
+   # | / | <>                  |
+   # |   | magic               |
+   # |   | architecture        |
+   # |   | version             |
+   # |   | architectureversion |
+   # |   | dumplength          |
+   # |   | dumptime            |
+   # |   | blocksize           |
+   # |   | hostname            |
+   # |   | versionstring       |
+   # |   | panicstring         |
+   # |   | parity              |
+   # |---+---------------------|
+
+   #+CAPTION: ELF Header Format
+   #+NAME:   tab:elfheader
+   #+ATTR_LATEX: :float nil
+|---+----------------------------+------------------------|
+|   | Field                      | Value                  |
+|---+----------------------------+------------------------|
+| / | >                          | <                      |
+|   | =ehdr.e_ident[EI_MAG0]=    | =0x7f=                 |
+|   | =ehdr.e_ident[EI_MAG1]=    | `E'                    |
+|   | =ehdr.e_ident[EI_MAG2]=    | `L'                    |
+|   | =ehdr.e_ident[EI_MAG3]=    | `F'                    |
+|   | =ehdr.e_ident[EI_CLASS]=   | 2 (64-bit)             |
+|   | =ehdr.e_ident[EI_DATA]=    | 1 (little endian)      |
+|   | =ehdr.e_ident[EI_VERSION]= | 1 (ELF version 1)      |
+|   | =ehdr.e_ident[EI_OSABI]=   | 255                    |
+|   | =ehdr.e_type=              | 4 (core)               |
+|   | =ehdr.e_machine=           | 62 (x86-64)            |
+|   | =ehdr.e_phoff=             | size of this header    |
+|   | =ehdr.e_flags=             | =0=                    |
+|   | =ehdr.e_ehsize=            | size of this header    |
+|   | =ehdr.e_phentsize=         | size of program header |
+|   | =ehdr.e_shentsize=         | size of section header |
+|---+----------------------------+------------------------|
+# TODO e_phoff may not be right
+# |---+----------------------------+-----------------------------------------------|
+# |   | Field                      | Value                                         |
+# |---+----------------------------+-----------------------------------------------|
+# | / | <>                         | <>                                            |
+# |   | =ehdr.e_ident[EI_MAG0]=    | =ELFMAG0= = =0x7f=                            |
+# |   | =ehdr.e_ident[EI_MAG1]=    | =ELFMAG1= = 'E'                               |
+# |   | =ehdr.e_ident[EI_MAG2]=    | =ELFMAG2= = 'L'                               |
+# |   | =ehdr.e_ident[EI_MAG3]=    | =ELFMAG3= = 'F'                               |
+# |   | =ehdr.e_ident[EI_CLASS]=   | =ELF_CLASS= = 2 (64-bit)                      |
+# |   | =ehdr.e_ident[EI_DATA]=    | =ELFDATA2LSB= = 1 (little endian)             |
+# |   | =ehdr.e_ident[EI_VERSION]= | =EV_CURRENT= = 1 (ELF version 1)              |
+# |   | =ehdr.e_ident[EI_OSABI]=   | =ELFOSABI_STANDALONE= = 255                   |
+# |   | =ehdr.e_type=              | =ET_CORE= = 4 (core)                          |
+# |   | =ehdr.e_machine=           | =EM_VALUE= = 62 (x86-64)                      |
+# |   | =ehdr.e_phoff=             | =sizeof(ehdr)= = (size of this header)        |
+# |   | =ehdr.e_flags=             | =0=                                           |
+# |   | =ehdr.e_ehsize=            | =sizeof(ehdr)= = (size of this header)        |
+# |   | =ehdr.e_phentsize=         | =sizeof(Elf_Phdr)= = (size of program header) |
+# |   | =ehdr.e_shentsize=         | =sizeof(Elf_Shdr)= = (size of section header) |
+# |---+----------------------------+-----------------------------------------------|
+
+
+*** Notes                                                        :noexport:
+  # - Canonical BSD Unix core memory dumping: All memory to a
+  #      pre-designated device
+  #   - 64kb indent, starts dumping at END of dump dev in case you
+  #        start swapping early in boot before you retrieve the dump.
+  #        4.2BSD?
+  #   - kern/kern\_shutdown.c (Traditional)
+
+  #   - Backtrace.io paper here
+  # https://backtrace.io/blog/improving-freebsd-kernel-debugging/
+  # https://en.wikipedia.org/wiki/Core_dump
+** minidump contents                                               :noexport:
+** =textdump= contents                                             :noexport:
+*** Notes                                                        :noexport:
+    https://lists.freebsd.org/pipermail/freebsd-current/2007-December/081626.html
+
+** Modern Full Core Dump Procedure
+
+  When a UNIX-like system such as FreeBSD encounters an unrecoverable and
+  unexpected error the kernel will "panic". Though the word panic has connotations
+  of irrationality, the function =panic(9)= maintains composure while it
+  "[terminates] the running system" and attempts to save a core dump to a
+  configured dump device. 
+
+# this references D&I
+ 
+  What follows is a thorough description of the FreeBSD core dump routine starting
+  with =doadump()= in =sys/kern/kern_shutdown.c=. 
+
+  =doadump()= is called by =kern_reboot()=, which shuts down "the system cleanly to
+  prepare for reboot, halt, or power off." [4] =kern_reboot()= calls
+  =doadump()= if the =RB_DUMP= flag is set and the system is not "cold" or already
+  creating a core dump. =doadump()= takes a boolean informing it to whether or not
+  to take a "text dump", a form of dump carried out if the online kernel debugger,
+  =DDB=, is built into the running kernel. =doaddump()= returns an error code if
+  the system is currently creating a dump, the dumper is NULL and returns error
+  codes on behalf of =dumpsys()=.
+
+  =doadump(boolean_t textdump)= starts the core dump procedure by saving the
+  current context with a call to =savectx()=. At this point if they are
+  configured, a "text dump" can be carried out. Otherwise a core dump is invoked
+  using =dumpsys()=, passing it a =struct dumper=. =dumpsys()= is defined on a
+  per-architecture basis. This allows different architectures to setup their
+  dump structure differently. =dumpsys()= calls =dumpsys_generic()= passing
+  along the =struct dumperinfo= it was called with. =dumpsys_generic()= is
+  defined in =sys/kern/kern_dump.c= and is the meat of the core dump procedure.
+
+  There are several main steps to the =dumpsys_generic()= procedure. The main
+  steps are as follows. At any point if there is an error condition, goto
+  failure cleanup at the end of the procedure.
+
+  1. Fill in the ELF header.
+  2. Calculate the dump size.
+  3. Determine if the dump device is large enough.
+  4. Begin Dump
+     1. Leader (Padding)
+     2. ELF Header
+     3. Program Headers
+     4. Memory Chunks
+     5. Trailer
+  5. End Dump
+
+     # this NULL byte claim needs verifcation
+     After this is done the kernel writes out a NULL byte to "Signal completion,
+     signoff and exit stage left." And our core dump is complete.
+
+** BSD Core Dump Extensions                                        :noexport:
+  Not yet done. This section details the features in these extensions.
+
+*** =netdump= - Network Dump
+*** Compressed Dump
+*** Encrypted Dump
+     # - Encryption - landed in head 12/10/2016 (Verify)
+*** =minidumpsz= - Minidump Size Estimation
+
+* History
+
+The following sections list when different features of the core dump code were
+introduced starting with the core dump code itself. First the dump facility will
+be followed through the different versions of Research UNIX and then BSD through
+to present versions of FreeBSD. A quick explanation of the state of Mac OS X's
+dump features will follow. Afterward the various core dump extensions' history
+will be explored.
+
+** Core Dumps in UNIX
+
+Core dumping was initially a manual process. As documented in Version 6 AT&T
+UNIX's =crash(8)=, an operator could take a core dump ``if [they felt] up to
+debugging''. Though 6th Edition is not the first appearance of dump code in
+UNIX, it is the first complete repository of code the public has access to.
+
+*** 5th Edition UNIX                                               :noexport:
+    5th Edition UNIX's dump code can be found in =usr/sys/conf/mch.s=.
+
+**** =/usr/sys/conf/mch.s=                                         :noexport:
+# https://github.com/dspinellis/unix-history-repo/blob/Research-V5-Snapshot-Development/usr/sys/conf/mch.s#L826
+
+    #+BEGIN_SRC asm
+.globl	dump
+dump:
+	mov	$4,r0	/ overwrites trap vectors
+	mov	r1,(r0)+
+	mov	r2,(r0)+
+	mov	r3,(r0)+
+	mov	r4,(r0)+
+	mov	r5,(r0)+
+	mov	sp,(r0)+
+	mov	$KISA0,r1
+	mov	$8.,r2
+1:
+	mov	(r1)+,(r0)+
+	sob	r2,1b
+	mov	$MTC,r0
+	mov	$60004,(r0)+
+	clr	2(r0)
+1:
+	mov	$-512.,(r0)
+	inc	-(r0)
+2:
+	tstb	(r0)
+	bge	2b
+	tst	(r0)+
+	bge	1b
+	5
+	mov	$60007,-(r0)
+	br	.
+    #+END_SRC
+*** 6th Edition UNIX
+ In 6th Edition UNIX =crash(8)= teaches us how to manually take a core dump:
+
+#+BEGIN_QUOTE
+If the reason for the crash is not evident
+(see below for guidance on `evident')
+you may want to try to dump the system if you feel up to
+debugging.
+At the moment a dump can be taken only on magtape.
+With a tape mounted and ready,
+stop the machine, load address 44, and start.
+This should write a copy of all of core
+on the tape with an EOF mark.
+#+END_QUOTE
+
+     =/usr/sys/conf/m40.s= and =/usr/sys/conf/m45.s= give UNIX support for the
+     PDP-11/40 and PDP-11-45.
+**** =/usr/sys/conf/m40.s=                                         :noexport:
+    # https://github.com/dspinellis/unix-history-repo/blob/Research-V6-Snapshot-Development/usr/sys/conf/m40.s
+    #+BEGIN_SRC asm
+    .globl	dump
+    dump:
+    	bit	$1,SSR0
+    	bne	dump
+    
+    / save regs r0,r1,r2,r3,r4,r5,r6,KIA6
+    / starting at abs location 4
+    
+    	mov	r0,4
+    	mov	$6,r0
+    	mov	r1,(r0)+
+    	mov	r2,(r0)+
+    	mov	r3,(r0)+
+    	mov	r4,(r0)+
+    	mov	r5,(r0)+
+    	mov	sp,(r0)+
+    	mov	KISA6,(r0)+
+    
+    / dump all of core (ie to first mt error)
+    / onto mag tape. (9 track or 7 track 'binary')
+    
+    	mov	$MTC,r0
+    	mov	$60004,(r0)+
+    	clr	2(r0)
+    1:
+    	mov	$-512.,(r0)
+    	inc	-(r0)
+    2:
+    	tstb	(r0)
+    	bge	2b
+    	tst	(r0)+
+    	bge	1b
+    	reset
+    
+    / end of file and loop
+    
+    	mov	$60007,-(r0)
+    	br	.
+    #+END_SRC
+
+**** =/usr/sys/conf/m45.s=                                         :noexport:
+=/usr/sys/conf/m45.s=
+# https://github.com/dspinellis/unix-history-repo/blob/Research-V6-Snapshot-Development/usr/sys/conf/m45.s#L21
+#+BEGIN_SRC asm
+/ Mag tape dump
+/ save registers in low core and
+/ write all core onto mag tape.
+/ entry is thru 44 abs
+
+.data
+.globl	dump
+dump:
+	bit	$1,SSR0
+	bne	dump
+
+/ save regs r0,r1,r2,r3,r4,r5,r6,KIA6
+/ starting at abs location 4
+
+	mov	r0,4
+	mov	$6,r0
+	mov	r1,(r0)+
+	mov	r2,(r0)+
+	mov	r3,(r0)+
+	mov	r4,(r0)+
+	mov	r5,(r0)+
+	mov	sp,(r0)+
+	mov	KDSA6,(r0)+
+
+/ dump all of core (ie to first mt error)
+/ onto mag tape. (9 track or 7 track 'binary')
+
+	mov	$MTC,r0
+	mov	$60004,(r0)+
+	clr	2(r0)
+1:
+	mov	$-512.,(r0)
+	inc	-(r0)
+2:
+	tstb	(r0)
+	bge	2b
+	tst	(r0)+
+	bge	1b
+	reset
+
+/ end of file and loop
+
+	mov	$60007,-(r0)
+	br	.
+#+END_SRC
+*** 7th Edition UNIX
+**** =/usr/sys/conf/mch.s=                                         :noexport:
+# https://github.com/dspinellis/unix-history-repo/blob/Research-V7-Snapshot-Development/usr/sys/conf/mch.s#L26
+=/usr/sys/conf/mch.s=
+#+BEGIN_SRC asm
+/ Mag tape dump
+/ save registers in low core and
+/ write all core onto mag tape.
+/ entry is thru 44 abs
+
+.data
+.globl	dump
+dump:
+
+/ save regs r0,r1,r2,r3,r4,r5,r6,KIA6
+/ starting at abs location 4
+
+	mov	r0,4
+	mov	$6,r0
+	mov	r1,(r0)+
+	mov	r2,(r0)+
+	mov	r3,(r0)+
+	mov	r4,(r0)+
+	mov	r5,(r0)+
+	mov	sp,(r0)+
+	mov	KDSA6,(r0)+
+
+/ dump all of core (ie to first mt error)
+/ onto mag tape. (9 track or 7 track 'binary')
+
+.if HTDUMP
+	mov	$HTCS1,r0
+	mov	$40,*$HTCS2
+	mov	$2300,*$HTTC
+	clr	*$HTBA
+	mov	$1,(r0)
+1:
+	mov	$-512.,*$HTFC
+	mov	$-256.,*$HTWC
+	movb	$61,(r0)
+2:
+	tstb	(r0)
+	bge	2b
+	bit	$1,(r0)
+	bne	2b
+	bit	$40000,(r0)
+	beq	1b
+	mov	$27,(r0)
+.endif
+HT	= 0172440
+HTCS1	= HT+0
+HTWC	= HT+2
+HTBA	= HT+4
+HTFC	= HT+6
+HTCS2	= HT+10
+HTTC	= HT+32
+
+MTC = 172522
+.if TUDUMP
+	mov	$MTC,r0
+	mov	$60004,(r0)+
+	clr	2(r0)
+1:
+	mov	$-512.,(r0)
+	inc	-(r0)
+2:
+	tstb	(r0)
+	bge	2b
+	tst	(r0)+
+	bge	1b
+	reset
+
+/ end of file and loop
+
+	mov	$60007,-(r0)
+.endif
+	br	.
+#+END_SRC
+
+*** Bell 32/V
+    Bell 32/V was an early port of UNIX to the DEC VAX architecture making use
+    of the C programming language to decouple the code from the PDP-11.
+    =/usr/src/sys/sys/locore.s= contains the first appearance of =doadump()= the
+    same function name used today written in VAX assembly.
+**** =/usr/src/sys/sys/locore.s=                                   :noexport:
+# https://en.wikipedia.org/wiki/UNIX/32V
+# https://github.com/dspinellis/unix-history-repo/blob/Bell-32V-Snapshot-Development/usr/src/sys/sys/locore.s#L158
+=/usr/src/sys/sys/locore.s=
+#+BEGIN_SRC asm
+#  0x200
+# Produce a core image dump on mag tape
+	.globl	doadump
+doadump:
+	movl	sp,dumpstack	# save stack pointer
+	movab	dumpstack,sp	# reinit stack
+	mfpr	$PCBB,-(sp)	# save u-area pointer
+	mfpr	$MAPEN,-(sp)	# save value
+	mfpr	$IPL,-(sp)	# ...
+	mtpr	$0,$MAPEN		# turn off memory mapping
+	mtpr	$HIGH,$IPL		# disable interrupts
+	pushr	$0x3fff			# save regs 0 - 13
+	calls	$0,_dump	# produce dump
+	halt
+
+	.data
+	.align	2
+	.globl	dumpstack
+	.space	58*4		# seperate stack for tape dumps
+dumpstack: 
+	.space	4
+	.text
+#+END_SRC
+
+** Core Dumps in BSD
+
+# probably just brought into source control with his name
+# =doadump= was added to 3BSD in 1980 by
+# Ozalp Babaoglu and was written in 33 lines of PDP-11 assembly.
+
+# TODO Talk here about added architectures? Pretty much everything is the same
+# from here on out just added architectures
+*** 1BSD & 2BSD
+    1BSD and 2BSD inherited their dump code directly from 6th Edition UNIX and
+    therefore written for the PDP-11 supporting the PDP-11/40 and PDP-11/45.
+*** 3BSD
+    3BSD imports its' dump code from Bell 32/V maintaining the name =doadump=.
+    Because of it's pedigree, =doadump= is written for in VAX assembly.
+
+    =usr/src/sys/sys/TODO= notes that "large core dumps are awful and even
+    uninterruptible!".
+
+    # https://github.com/dspinellis/unix-history-repo/blob/BSD-3-Snapshot-Development/usr/src/sys/sys/locore.s#L174
+    # https://github.com/dspinellis/unix-history-repo/blob/BSD-3-Snapshot-Development/usr/src/sys/sys/TODO
+**** =/usr/src/sys/sys/locore.s=                                   :noexport:
+    =doadump=
+    #+BEGIN_SRC asm
+# =====================================
+# Produce a core image dump on mag tape
+# =====================================
+	.globl	doadump
+doadump:
+	movl	sp,dumpstack		# save stack pointer
+	movab	dumpstack,sp		# reinit stack
+	mfpr	$PCBB,-(sp)		# save u-area pointer
+	mfpr	$MAPEN,-(sp)		# save value
+	mfpr	$IPL,-(sp)		# ...
+	mtpr	$0,$MAPEN		# turn off memory mapping
+	mtpr	$HIGH,$IPL		# disable interrupts
+	pushr	$0x3fff			# save regs 0 - 13
+	calls	$0,_dump		# produce dump
+	halt
+
+	.data
+	.align	2
+	.globl	dumpstack
+	.space	58*4			# separate stack for tape dumps
+dumpstack: 
+	.space	4
+	.text
+    #+END_SRC
+*** 4BSD
+    4BSD introduces a new feature to =doadump=, printing tracing information
+    with =dumptrc=. In addition =usr/src/sys/sys/TODO= is the first mention of
+    adding a dump to swap feature listing a "todo": "Support automatic dumps to paging area".
+    before 
+    # https://github.com/dspinellis/unix-history-repo/blob/BSD-4-Snapshot-Development/usr/src/sys/sys/locore.s#L174
+    # - add trace information with _dumptrc
+    # https://github.com/dspinellis/unix-history-repo/blob/BSD-4-Snapshot-Development/usr/src/sys/sys/TODO#L28
+    # - First talk of dump to swap in =/usr/src/sys/sys/TODO=
+*** 4.1BSD
+
+    Beginning in 4.1BSD (actually showing up in 4.1c2BSD) =doadump= is relegated
+    to setting up the machine for =dumpsys()= which is written in C and found in
+    =sys/vax/vax/machdep.c=. =doadump= now fulfills the "todo" listed in 4BSD and
+    dumps to the "paging area", or swap. =savecore(8)= is introduced to extract
+    the core from the swap partition and place it in the filesystem.
+
+    # https://github.com/dspinellis/unix-history-repo/blob/BSD-4_1c_2-Snapshot-Development/a/sys/vax/Locore.c#L36
+*** 4.1BSD                                                         :noexport:
+    # https://github.com/dspinellis/unix-history-repo/blob/BSD-4_1_snap-Snapshot-Development/sys/sys/Locore.c#L32
+    # - Back to asm? Actually I might be wrong, it might be a C/asm hybrid right now
+    # https://github.com/dspinellis/unix-history-repo/blob/BSD-4_1_snap-Snapshot-Development/sys/GENERIC/locore.c#L112
+*** 4.2BSD
+    # https://github.com/dspinellis/unix-history-repo/blob/BSD-4_1_snap-Snapshot-Development/sys/sys/Locore.c#L32
+*** 4.3BSD
+    Initial support is added for the ``tahoe'' processor.
+*** 4.3 BSD-Tahoe
+    Tahoe support is now mature and 
+    =sys/tahoe/tahoe/machdep.c= and =doadump= is ported to the tahoe.
+    =savecore= is re-written in ANSI C.
+#http://gunkies.org/wiki/4.3_BSD_Tahoe
+#     The primary purpose of this release is to provide  sup- 
+# port  for  the ``tahoe'' processor, the CPU used by Computer 
+# Consoles, Inc. (CCI Power 6/32, 6/32SX), and high end  lines 
+# of Harris (HCX-7 and HCX-9), Unisys (7000/40), and ICL (Clan 
+# 7).  Support for this processor is derived from  the  4.2BSD 
+# system  done by CCI.  Support for new DEC equipment has also 
+# been added, including support for the 8250 BI-based CPU  and 
+# the KDB-50 BI disk controller from Chris Torek, and the QVSS 
+# and QDSS display drivers for the MicroVAX II, contributed by 
+# Digital Equipment Corporation.  We expect to provide support 
+# for  both  the  VAX  and  the  tahoe  processors  in  future 
+# releases. 
+*** 4.3 BSD Net/1
+    same as 4.3-Tahoe
+*** 4.3 BSD-Reno
+    =usr/src/sys/hp300/locore.s= and =usr/src/sys/i386/locore.s= introduce hp300
+    and i386 support respectively. 
+# hp300 support came from Utah
+*** 4.3 BSD Net/2
+    same as reno
+*** 4.4
+    Tahoe no longer compiles and therefore cannot dump.
+    i386 does not compile. VAX does not compile.
+    sparc is added
+    Not yet done.
+    =usr/src/sys/luna68k/luna68k/locore.s= introduces OMRON m68030 support
+    including dump support.
+    # in 1992 -- I'm born finally!
+*** 4.4-BSD Lite1
+    
+    same as 4.4 -- changes made due to USL lawsuit.
+*** 4.4-BSD Lite2
+    -
+*** BSD SCCS
+    -
+*** 386BSD-0.0
+    i386 support, hp300 support
+*** 386BSD-0.1
+    i386 support, hp300 support
+*** 386BSD-0.1-patchkit
+    i386 support, hp300 support
+*** FreeBSD 1.0, 1.1, 1.1.5
+    i386 support, hp300 support from 386BSD-0.1-patchkit
+*** FreeBSD 2.0 2.0.5, 2.1.0, 2.1.5, 2.1.6, 2.1.6.1, 2.1.7, 2.2.0, 2.2.1, 2.2.2, 2.2.5, 2.2.6, 2.2.7, 2.2.8
+    Pulls in 4.4BSD-Lite1 code for hp300, luna68k, news3400, pmax, sparc, tahoe and vax
+**** Notes                                                         :noexport:
+#+BEGIN_QUOTE
+  /ssh:freebsd-current:/root/src/unix-history-repo/:
+  find . \( -type f -exec grep -q -e dumpsys \{\} \; \) -ls
+  1945687      144 -rw-r--r--    1 root                             wheel                               72708 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/hp300/hp300/locore.s
+  1945688       80 -rw-r--r--    1 root                             wheel                               40785 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/hp300/hp300/machdep.c
+  1785250     1728 -rw-r--r--    1 root                             wheel                              836045 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/hp300/tags
+  973678       64 -rw-r--r--    1 root                             wheel                               30221 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/i386/i386/machdep.c
+  973686     1536 -rw-r--r--    1 root                             wheel                              746387 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/i386/tags
+  2506530      128 -rw-r--r--    1 root                             wheel                               63107 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/luna68k/luna68k/locore.s
+  2506531       64 -rw-r--r--    1 root                             wheel                               30470 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/luna68k/luna68k/machdep.c
+  2506880       48 -rw-r--r--    1 root                             wheel                               23756 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/news3400/news3400/machdep.c
+  2506902     1856 -rw-r--r--    1 root                             wheel                              891210 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/news3400/tags
+  2271373       56 -rw-r--r--    1 root                             wheel                               28486 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/pmax/dev/rz.c
+  2506949      112 -rw-r--r--    1 root                             wheel                               53461 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/pmax/pmax/machdep.c
+  2188752     1792 -rw-r--r--    1 root                             wheel                              862201 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/pmax/tags
+  2507078       48 -rw-r--r--    1 root                             wheel                               22534 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/sparc/sparc/machdep.c
+  1130530     1664 -rw-r--r--    1 root                             wheel                              804425 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/sparc/tags
+  1860931     1600 -rw-r--r--    1 root                             wheel                              773455 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/tahoe/tags
+  1945710     2240 -rw-r--r--    1 root                             wheel                             1096432 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/vax/tags
+  2574311       80 -rw-r--r--    1 root                             wheel                               38769 Dec 23 02:00 .ref-FreeBSD-release/1.1.5/sys/i386/i386/machdep.c
+  1703024       88 -rw-r--r--    1 root                             wheel                               44085 Dec 23 02:00 sys/i386/i386/machdep.c
+#+END_QUOTE
+
+*** FreeBSD 3.0.0, 3.1.0, 3.2.0, 3.3.0, 3.4.0, 3.5.0
+**** Notes                                                         :noexport:
+    
+*** FreeBSD 4.0.0 4.1.0, 4.1.1, 4.2.0, 4.3.0, 4.4.0, 4.5.0, 4.6.0, 4.6.1, 4.6.2, 4.7.0, 4.8.0, 4.9.0, 4.10.0, 4.11.0
+*** FreeBSD 5.0.0 5.1.0, 5.2.0, 5.2.1, 5.3.0, 5.4.0, 5.5.0
+*** FreeBSD 6.0.0, 6.1.0, 6.2.0, 6.3.0, 6.4.0
+    - Write on minidump
+*** FreeBSD 7.0.0, 7.1.0, 7.2.0, 7.3.0, 7.4.0
+    - Write on textdump
+**** Notes                                                         :noexport:
+    #https://lists.freebsd.org/pipermail/freebsd-current/2007-December/081626.html
+*** FreeBSD 8.0.0, 8.1.0, 8.2.0, 8.3.0, 8.4.0
+*** FreeBSD 9.0.0, 9.1.0, 9.2.0
+*** FreeBSD 10.0.0, 10.1.0, 10.2.0, 10.3.0
+*** FreeBSD 11.0.0, 11.0.1
+*** FreeBSD 12-CURRENT
+    - Write on encrypted textdump
+#+BEGIN_QUOTE
+    commit f63c437216e0309e4a319c2c95a2f8ca061c0bca
+    Author: def <def@FreeBSD.org>
+    Date:   Sat Dec 10 16:20:39 2016 +0000
+
+    Add support for encrypted kernel crash dumps.
+#+END_QUOTE
+  Not yet done.
+***** Notes                                                        :noexport:
+      - sys/kern/kern\_dump.c
+      - sys/kern/kern\_shutdown.c
+      - sys/amd64/amd64/machdep\_minidump.c
+      - and rarely bits might be in sys/amd64/amd64/pmap.c
+
+** Core Dumps in Mac OS X
+   Mac OS X is capable of creating gzipped core dumps and dumping locally, or
+   over the network using a modified =tftpd(8)= daemon they call =kdumpd(8)=. In
+   addition dumps over FireWire are supported for situations where the kernel
+   panic is caused by the Ethernet driver of network code.
+
+
+   In =xnu/osfmk/kdp/kdp_core.c= Mac OS X gzips its' core dump before writing it
+   out to disk, and is otherwise much like the FreeBSD "full dump" procedure
+   with one major difference. Notably, Mac OS X uses a different executable
+   image-format called Mach-O, as opposed to ELF, because OS X runs a hybrid
+   Mach and BSD kernel called XNU.
+
+   # is os x doing something like minidumps? look at freebsd minidump to look for what might clue me off
+   # are net dumps not gzipped here? https://github.com/opensource-apple/xnu/blob/27ffc00f33925b582391b1ef318b78b8bd3939d1/osfmk/kdp/kdp_core.c#L539
+
+   Network dumping "has been present since Mac OS X 10.3 for PowerPC-based
+   Macintosh systems, and since Mac OS X 10.4.7 for Intel-based Macintosh
+   systems."
+   From =kdumpd(8)=:
+#+BEGIN_QUOTE
+     Kdumpd is a server which receives kernel states in the form of a core
+     dump from a remote Mac OS X machine.  
+
+     ...
+
+     The kdumpd command is based on Berkeley tftpd(8) by way of FreeBSD, with
+     several modifications.
+#+END_QUOTE
+
+*** Notes                                                          :noexport:
+    # https://developer.apple.com/library/content/technotes/tn2063/_index.html
+    # https://developer.apple.com/library/content/technotes/tn2004/tn2118.html
+    # https://github.com/opensource-apple/xnu/blob/27ffc00f33925b582391b1ef318b78b8bd3939d1/osfmk/kdp/kdp_core.c#L491
+    # https://opensource.apple.com/source/network_cmds/network_cmds-396.6/kdumpd.tproj/
+    #+BEGIN_SRC c
+    static int
+    do_kern_dump(kern_dump_output_proc outproc, bool local)
+    {
+        struct kern_dump_preflight_context kdc_preflight;
+        struct kern_dump_send_context      kdc_sendseg;
+        struct kern_dump_send_context      kdc_send;
+        struct kdp_core_out_vars           outvars;
+        struct mach_core_fileheader         hdr;
+        kernel_mach_header_t mh;
+        uint32_t	         segment_count, tstate_count;
+        size_t		 command_size = 0, header_size = 0, tstate_size = 0;
+        uint64_t	         hoffset, foffset;
+        int                  ret;
+        char *               log_start;
+        uint64_t             log_length;
+        uint64_t             new_logs;
+        boolean_t            opened;
+    
+        opened     = false;
+        log_start  = debug_buf_ptr;
+        log_length = 0;
+        if (log_start >= debug_buf_addr)
+        {
+    	log_length = log_start - debug_buf_addr;
+    	if (log_length <= debug_buf_size) log_length = debug_buf_size - log_length;
+    	else log_length = 0;
+        }
+    
+        if (local)
+        {
+    	if ((ret = (*outproc)(KDP_WRQ, NULL, 0, &hoffset)) != kIOReturnSuccess) {
+    	    DEBG("KDP_WRQ(0x%x)\n", ret);
+    	    goto out;
+    	}
+        }
+        opened = true;
+    
+        // init gzip
+        bzero(&outvars, sizeof(outvars));
+        bzero(&hdr, sizeof(hdr));
+        outvars.outproc = outproc;
+        kdp_core_zs.avail_in  = 0;
+        kdp_core_zs.next_in   = NULL;
+        kdp_core_zs.avail_out = 0;
+        kdp_core_zs.next_out  = NULL;
+        kdp_core_zs.opaque    = &outvars;
+        kdc_sendseg.outvars   = &outvars;
+        kdc_send.outvars      = &outvars;
+    
+        if (local)
+        {
+    	outvars.outbuf      = NULL;
+            outvars.outlen      = 0;
+            outvars.outremain   = 0;
+    	outvars.zoutput     = kdp_core_zoutput;
+        	// space for file header & log
+        	foffset = (4096 + log_length + 4095) & ~4095ULL;
+    	hdr.log_offset = 4096;
+    	hdr.gzip_offset = foffset;
+    	if ((ret = (*outproc)(KDP_SEEK, NULL, sizeof(foffset), &foffset)) != kIOReturnSuccess) { 
+    		DEBG("KDP_SEEK(0x%x)\n", ret);
+    		goto out;
+    	} 
+        }
+        else
+        {
+    	outvars.outbuf    = (Bytef *) (kdp_core_zmem + kdp_core_zoffset);
+    	assert((kdp_core_zoffset + kdp_crashdump_pkt_size) <= kdp_core_zsize);
+            outvars.outlen    = kdp_crashdump_pkt_size;
+            outvars.outremain = outvars.outlen;
+    	outvars.zoutput  = kdp_core_zoutputbuf;
+        }
+    
+        deflateResetWithIO(&kdp_core_zs, kdp_core_zinput, outvars.zoutput);
+    
+    
+        kdc_preflight.region_count = 0;
+        kdc_preflight.dumpable_bytes = 0;
+    
+        ret = pmap_traverse_present_mappings(kernel_pmap,
+    					 VM_MIN_KERNEL_AND_KEXT_ADDRESS,
+    					 VM_MAX_KERNEL_ADDRESS,
+    					 kern_dump_pmap_traverse_preflight_callback,
+    					 &kdc_preflight);
+        if (ret)
+        {
+    	DEBG("pmap traversal failed: %d\n", ret);
+    	return (ret);
+        }
+    
+        outvars.totalbytes = kdc_preflight.dumpable_bytes;
+        assert(outvars.totalbytes);
+        segment_count = kdc_preflight.region_count;
+    
+        kern_collectth_state_size(&tstate_count, &tstate_size);
+    
+        command_size = segment_count * sizeof(kernel_segment_command_t) + tstate_count * tstate_size;
+    
+        header_size = command_size + sizeof(kernel_mach_header_t);
+    
+        /*
+         *	Set up Mach-O header for currently executing kernel.
+         */
+    
+        mh.magic = _mh_execute_header.magic;
+        mh.cputype = _mh_execute_header.cputype;;
+        mh.cpusubtype = _mh_execute_header.cpusubtype;
+        mh.filetype = MH_CORE;
+        mh.ncmds = segment_count + tstate_count;
+        mh.sizeofcmds = (uint32_t)command_size;
+        mh.flags = 0;
+    #if defined(__LP64__)
+        mh.reserved = 0;
+    #endif
+    
+        hoffset = 0;	                                /* offset into header */
+        foffset = (uint64_t) round_page(header_size);	/* offset into file */
+    
+        /* Transmit the Mach-O MH_CORE header, and segment and thread commands 
+         */
+        if ((ret = kdp_core_stream_output(&outvars, sizeof(kernel_mach_header_t), (caddr_t) &mh) != kIOReturnSuccess))
+        {
+    	DEBG("KDP_DATA(0x%x)\n", ret);
+    	goto out;
+        }
+    
+        hoffset += sizeof(kernel_mach_header_t);
+    
+        DEBG("%s", local ? "Writing local kernel core..." :
+        	    	       "Transmitting kernel state, please wait:\n");
+    
+        kdc_sendseg.region_count   = 0;
+        kdc_sendseg.dumpable_bytes = 0;
+        kdc_sendseg.hoffset = hoffset;
+        kdc_sendseg.foffset = foffset;
+        kdc_sendseg.header_size = header_size;
+    
+        if ((ret = pmap_traverse_present_mappings(kernel_pmap,
+    					 VM_MIN_KERNEL_AND_KEXT_ADDRESS,
+    					 VM_MAX_KERNEL_ADDRESS,
+    					 kern_dump_pmap_traverse_send_seg_callback,
+    					 &kdc_sendseg)) != kIOReturnSuccess)
+        {
+    	DEBG("pmap_traverse_present_mappings(0x%x)\n", ret);
+    	goto out;
+        }
+    
+        hoffset = kdc_sendseg.hoffset;
+        /*
+         * Now send out the LC_THREAD load command, with the thread information
+         * for the current activation.
+         */
+    
+        if (tstate_size > 0)
+        {
+    	void * iter;
+    	char tstate[tstate_size];
+    	iter = NULL;
+    	do {
+    	    /*
+    	     * Now send out the LC_THREAD load command, with the thread information
+    	     */
+    	    kern_collectth_state (current_thread(), tstate, tstate_size, &iter);
+    
+    	    if ((ret = kdp_core_stream_output(&outvars, tstate_size, tstate)) != kIOReturnSuccess) {
+    		    DEBG("kdp_core_stream_output(0x%x)\n", ret);
+    		    goto out;
+    	    }
+    	}
+    	while (iter);
+        }
+    
+        kdc_send.region_count   = 0;
+        kdc_send.dumpable_bytes = 0;
+        foffset = (uint64_t) round_page(header_size);	/* offset into file */
+        kdc_send.foffset = foffset;
+        kdc_send.hoffset = 0;
+        foffset = round_page_64(header_size) - header_size;
+        if (foffset)
+        {
+    	// zero fill to page align
+    	if ((ret = kdp_core_stream_output(&outvars, foffset, NULL)) != kIOReturnSuccess) {
+    		DEBG("kdp_core_stream_output(0x%x)\n", ret);
+    		goto out;
+    	}
+        }
+    
+        ret = pmap_traverse_present_mappings(kernel_pmap,
+    					 VM_MIN_KERNEL_AND_KEXT_ADDRESS,
+    					 VM_MAX_KERNEL_ADDRESS,
+    					 kern_dump_pmap_traverse_send_segdata_callback,
+    					 &kdc_send);
+        if (ret) {
+    	DEBG("pmap_traverse_present_mappings(0x%x)\n", ret);
+    	goto out;
+        }
+    
+        if ((ret = kdp_core_stream_output(&outvars, 0, NULL) != kIOReturnSuccess)) {
+    	DEBG("kdp_core_stream_output(0x%x)\n", ret);
+    	goto out;
+        }
+    
+    out:
+        if (kIOReturnSuccess == ret) DEBG("success\n");
+        else                         outvars.zipped = 0;
+    
+        DEBG("Mach-o header: %lu\n", header_size);
+        DEBG("Region counts: [%u, %u, %u]\n", kdc_preflight.region_count,
+    					  kdc_sendseg.region_count, 
+    					  kdc_send.region_count);
+        DEBG("Byte counts  : [%llu, %llu, %llu, %lu, %llu]\n", kdc_preflight.dumpable_bytes, 
+    							   kdc_sendseg.dumpable_bytes, 
+    							   kdc_send.dumpable_bytes, 
+    							   outvars.zipped, log_length);
+        if (local && opened)
+        {
+        	// write debug log
+        	foffset = 4096;
+    	if ((ret = (*outproc)(KDP_SEEK, NULL, sizeof(foffset), &foffset)) != kIOReturnSuccess) { 
+    	    DEBG("KDP_SEEK(0x%x)\n", ret);
+    	    goto exit;
+    	} 
+    
+    	new_logs = debug_buf_ptr - log_start;
+    	if (new_logs > log_length) new_logs = log_length;
+        	
+    	if ((ret = (*outproc)(KDP_DATA, NULL, new_logs, log_start)) != kIOReturnSuccess)
+    	{ 
+    	    DEBG("KDP_DATA(0x%x)\n", ret);
+    	    goto exit;
+    	} 
+    
+        	// write header
+    
+        	foffset = 0;
+    	if ((ret = (*outproc)(KDP_SEEK, NULL, sizeof(foffset), &foffset)) != kIOReturnSuccess) { 
+    	    DEBG("KDP_SEEK(0x%x)\n", ret);
+    	    goto exit;
+    	} 
+    
+    	hdr.signature  = MACH_CORE_FILEHEADER_SIGNATURE;
+    	hdr.log_length = new_logs;
+            hdr.gzip_length = outvars.zipped;
+    
+    	if ((ret = (*outproc)(KDP_DATA, NULL, sizeof(hdr), &hdr)) != kIOReturnSuccess)
+    	{ 
+    	    DEBG("KDP_DATA(0x%x)\n", ret);
+    	    goto exit;
+    	}
+        }
+    
+    exit:
+        /* close / last packet */
+        if ((ret = (*outproc)(KDP_EOF, NULL, 0, ((void *) 0))) != kIOReturnSuccess)
+        {
+    	DEBG("KDP_EOF(0x%x)\n", ret);
+        }	
+    
+    
+        return (ret);
+    }
+    
+    int
+    kern_dump(boolean_t local)
+    {
+        static boolean_t dumped_local;
+        if (local) {
+    	if (dumped_local) return (0);
+    	dumped_local = TRUE;
+    	return (do_kern_dump(&kern_dump_disk_proc, true));
+        }
+    #if CONFIG_KDP_INTERACTIVE_DEBUGGING
+        return (do_kern_dump(&kdp_send_crashdump_data, false));
+    #else
+        return (-1);
+    #endif
+    }
+    #+END_SRC
+  Not yet done.
+** BSD Core Dump Extensions
+  Not yet done.
+
+*** =netdump= - Network Dump
+    - Netdumps
+      - Duke University code from long ago
+      - Picked up by Ed Maste at Sandvine, dropped
+      - Picked up by Mark Johnston at Sandvine
+      - Maintained by Mark Johnston at Isilon 
+  Not yet done.
+
+*** Compressed Dump
+      - Maintained by Mark Johnston at Isilon 
+  Not yet done.
+*** =minidumpsz= - Minidump Size Estimation
+  Not yet done.
+    Created by Rodney W. Grimes for the author's work at Groupon. =minidumpsz= is a
+    kernel module that can do an online estimation of the size of a minidump if
+    it were to occur at the time ~sysctl debug.mini_dump_size~ is called. 
+
+* Conclusion
+  Not yet done.
+* Acknowledgments
+  The author would like thank Michael Dexter for his help debugging the original
+  issues that led to our current combined knowledge of core dumps. In addition
+  Rodney W. Grimes' help reading code, from PDP-11 assembly to modern C, along
+  with his historical knowledge was invaluable.
+
+  The author thanks Deb Goodkin of the FreeBSD Foundation for her help bringing
+  the author into the FreeBSD community and lastly thanks the FreeBSD community
+  in general for making this day and paper possible.
+
+* References
+
+- [1] The Design and Implementation of the FreeBSD operating system by McKusick, Neville-Neil, and Watson
+- [2] crash(8) - 3BSD
+- [3] man 9 panic - https://www.freebsd.org/cgi/man.cgi?query=panic&apropos=0&sektion=0&manpath=FreeBSD+10.3-RELEASE+and+Ports&arch=default&format=html
+- [4] =kern_shutdown.c= - =sys/kern/kern_shutdown.c=
+- [5] Unix History Repository - https://github.com/dspinellis/unix-history-repo
+- [6] A Repository with 44 Years of Unix Evolution - http://www.dmst.aueb.gr/dds/pubs/conf/2015-MSR-Unix-History/html/Spi15c.html
+- https://en.wikipedia.org/wiki/Core_dump
