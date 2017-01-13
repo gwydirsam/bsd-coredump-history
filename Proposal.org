@@ -19,37 +19,6 @@
 #+SUBTITLE:
 
 #+BEGIN_COMMENT
-
-
-#* SUBMIT TO: secretary@asiabsdcon.org
-#* EMAIL:
-#** Paper title 
-#   The History and Future of Core Dumps in FreeBSD
-#** Abstract
-#** Names and affiliations of the authors
-#   Sam Gwydir - Texas A&M University
-#** Name of the speaker and whether a visa application is required or not to visit Japan
-#   Sam Gwydir, No -- I'm a United States citizen.
-#** Estimation of your travel expense
-#  |---------------+------------|
-#  | Item          | Cost (USD) |
-#  |---------------+------------|
-#  | Plane Tickets |    1842.26 |
-#  | Hotel         |     596.94 |
-#  |---------------+------------|
-#  |---------------+------------|
-#  | Total         |   2,439.20 |
-#  |               |            |
-#  |---------------+------------|
-#** Contact email address
-#   sam@samgwydir.com
-
-
-- There is a significant problem being solved or a real world experience being demonstrated.
-- There is active work being done.
-- There is enough progress to make a complete written submission.
-- There is data proving either the success or failure of any claims.
-
 -Questions
 
 Q: Are we going to focus on amd64 and x86?
@@ -125,7 +94,6 @@ doadump:
       - and rarely bits might be in sys/amd64/amd64/pmap.c
     - “Minidumps” of only active kernel pages
     - Dump time DDB scripting
-      - Useful if you don't have a dump device
       - DDB must be built into the kernel
       - No performance penalty but...
       - Security risk with the CTRL-ALT-ESC shortcut
@@ -145,7 +113,7 @@ doadump:
   - http://multicians.org/mgf.html#fdump
 - OS X dump server
 - https://developer.apple.com/library/content/technotes/tn2004/tn2118.html
-- 
+ 
 - FreeBSD Dumping Future
   - Netdumps
   - Compressed Dumps
@@ -423,26 +391,26 @@ research for this paper and can be found in the appendix.
      #+CAPTION: ELF Header Format
      #+NAME:   tab:elfheader
      #+ATTR_LATEX: :float nil
-  |---+----------------------------+------------------------|
-  |   | Field                      | Value                  |
-  |---+----------------------------+------------------------|
-  | / | >                          | <                      |
-  |   | =ehdr.e_ident[EI_MAG0]=    | =0x7f=                 |
-  |   | =ehdr.e_ident[EI_MAG1]=    | `E'                    |
-  |   | =ehdr.e_ident[EI_MAG2]=    | `L'                    |
-  |   | =ehdr.e_ident[EI_MAG3]=    | `F'                    |
-  |   | =ehdr.e_ident[EI_CLASS]=   | 2 (64-bit)             |
-  |   | =ehdr.e_ident[EI_DATA]=    | 1 (little endian)      |
-  |   | =ehdr.e_ident[EI_VERSION]= | 1 (ELF version 1)      |
-  |   | =ehdr.e_ident[EI_OSABI]=   | 255                    |
-  |   | =ehdr.e_type=              | 4 (core)               |
-  |   | =ehdr.e_machine=           | 62 (x86-64)            |
-  |   | =ehdr.e_phoff=             | size of this header    |
-  |   | =ehdr.e_flags=             | =0=                    |
-  |   | =ehdr.e_ehsize=            | size of this header    |
-  |   | =ehdr.e_phentsize=         | size of program header |
-  |   | =ehdr.e_shentsize=         | size of section header |
-  |---+----------------------------+------------------------|
+  |---+-----------------------+------------------------|
+  |   | =ehdr= Field          | Value                  |
+  |---+-----------------------+------------------------|
+  | / | >                     | <                      |
+  |   | =e_ident[EI_MAG0]=    | =0x7f=                 |
+  |   | =e_ident[EI_MAG1]=    | `E'                    |
+  |   | =e_ident[EI_MAG2]=    | `L'                    |
+  |   | =e_ident[EI_MAG3]=    | `F'                    |
+  |   | =e_ident[EI_CLASS]=   | 2 (64-bit)             |
+  |   | =e_ident[EI_DATA]=    | 1 (little endian)      |
+  |   | =e_ident[EI_VERSION]= | 1 (ELF version 1)      |
+  |   | =e_ident[EI_OSABI]=   | 255                    |
+  |   | =e_type=              | 4 (core)               |
+  |   | =e_machine=           | 62 (x86-64)            |
+  |   | =e_phoff=             | size of this header    |
+  |   | =e_flags=             | =0=                    |
+  |   | =e_ehsize=            | size of this header    |
+  |   | =e_phentsize=         | size of program header |
+  |   | =e_shentsize=         | size of section header |
+  |---+-----------------------+------------------------|
   # TODO e_phoff may not be right
   # |---+----------------------------+-----------------------------------------------|
   # |   | Field                      | Value                                         |
@@ -798,6 +766,25 @@ research for this paper and can be found in the appendix.
     #+END_SRC
   Not yet done.
 
+** Core Dumps in Solaris
+   Solaris has several features that others don't.
+   - =savecore(1M)= has the ability to ``live dump'', creating a dump of a
+     running system. =savecore(1M)= does note that this dump will not be
+     entirely self consistent because the machine is not halted while dumping.
+   - =dumpadm(1M)= allows save compression and dumping to swap on zvol(!!!)
+   - =dumpadm(1M)= as of Solaris 11.2 has a dump size estimation feature that will attempt to
+     estimate the size of a dump given your current configuration.
+   
+*** Notes                                                          :noexport:
+    - Solaris docs 
+      - live dump
+        - http://www.oracle.com/technetwork/server-storage/solaris/manage-core-dump-138834.html
+        - savecore(1m) live dump
+          - https://docs.oracle.com/cd/E53394_01/html/E54764/savecore-1m.html
+      - dump on swap on zvol
+        - https://docs.oracle.com/cd/E23824_01/html/821-1448/ggrln.html
+      - dumpadm(1m) for -e estimation (since solaris 11.2)
+        - https://docs.oracle.com/cd/E53394_01/html/E54764/dumpadm-1m.html
 * The Future
   There are several extensions to the FreeBSD core dump code that exist as sets
   of patches on mailing lists and wikis but are not found in upstream FreeBSD.
@@ -867,6 +854,120 @@ research for this paper and can be found in the appendix.
    yet made it into upstream FreeBSD.
 
 ** Modularizing Dump Code
+   - Backporting features and fixes added to dump code becomes trivial
+   - Development becomes easier because LKMs are easier to work with
+   - Embedded systems benifet from a smaller kernel
+*** Notes                                                          :noexport:
+**** Email from Rod Grimes
+#+BEGIN_QUOTE
+Delivered-To: sam@samgwydir.com
+Received: by 10.157.36.51 with SMTP id p48csp2535444ota;
+        Thu, 12 Jan 2017 22:07:09 -0800 (PST)
+X-Received: by 10.99.126.27 with SMTP id z27mr21825681pgc.177.1484287629121;
+        Thu, 12 Jan 2017 22:07:09 -0800 (PST)
+Return-Path: <freebsd@pdx.rh.cn85.dnsmgr.net>
+Received: from pdx.rh.CN85.dnsmgr.net ([207.55.42.1])
+        by mx.google.com with ESMTPS id 96si3190182plz.28.2017.01.12.22.07.06
+        for <sam@samgwydir.com>
+        (version=TLS1 cipher=AES128-SHA bits=128/128);
+        Thu, 12 Jan 2017 22:07:08 -0800 (PST)
+Received-SPF: neutral (google.com: 207.55.42.1 is neither permitted nor denied by best guess record for domain of freebsd@pdx.rh.cn85.dnsmgr.net) client-ip=207.55.42.1;
+Authentication-Results: mx.google.com;
+       spf=neutral (google.com: 207.55.42.1 is neither permitted nor denied by best guess record for domain of freebsd@pdx.rh.cn85.dnsmgr.net) smtp.mailfrom=freebsd@pdx.rh.cn85.dnsmgr.net
+Received: from pdx.rh.CN85.dnsmgr.net (localhost [127.0.0.1]) by pdx.rh.CN85.dnsmgr.net (8.13.3/8.13.3) with ESMTP id v0D66v5s052225 for <sam@samgwydir.com>; Thu, 12 Jan 2017 22:06:57 -0800 (PST) (envelope-from freebsd@pdx.rh.CN85.dnsmgr.net)
+Received: (from freebsd@localhost) by pdx.rh.CN85.dnsmgr.net (8.13.3/8.13.3/Submit) id v0D66tiI052224 for sam@samgwydir.com; Thu, 12 Jan 2017 22:06:55 -0800 (PST) (envelope-from freebsd)
+From: "Rodney W. Grimes" <freebsd@pdx.rh.cn85.dnsmgr.net>
+Message-Id: <201701130606.v0D66tiI052224@pdx.rh.CN85.dnsmgr.net>
+Subject: Re: Modular Dump
+In-Reply-To: <CACddXfnSTgxUOLCVFkzjip9CRjxmqk83UbdQnB5XnGy8QVYW8Q@mail.gmail.com>
+To: Sam Gwydir <sam@samgwydir.com>
+Date: Thu, 12 Jan 2017 22:06:55 -0800 (PST)
+Reply-To: rgrimes@freebsd.org
+X-Mailer: ELM [version 2.4ME+ PL121h (25)]
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+
+> On Thu, Jan 12, 2017 at 11:03 PM, Rodney W. Grimes
+> <freebsd@pdx.rh.cn85.dnsmgr.net> wrote:
+> >> Hey Rod,
+> >>
+> >> Finishing up my paper on core dumps and wanted to talk about your idea for
+> >> modularization of the dump code.
+> >
+> > Is there a copy of it some place to read?  (Please don't email it, as that
+> > tends to clutter my mail folder.)
+> 
+> Here you go: https://github.com/gwydirsam/bsd-coredump-history
+> 
+> The pdf is compiled from the org file. The org file contains notes but
+> may be hard to read without emacs and org-mode.
+
+No emacs for me, so I'll be reading the pdf.
+
+> The history is now an appendix because it is just a huge list. I'm not
+> 100% on some of the architecture support claims, in particular I'm not
+> familiar enough with VAX to nail down that period. In addition there
+> are some important features and bug fixes I'm sure I missed in the
+> FreeBSD history because I didn't go through all minor versions.
+> 
+> If there's anything you have to comment on let me know. Thanks for
+> taking a look.
+
+I'll make time to at least give it one fast pass.
+
+> >> I want to talk about why FreeBSD should go
+> >> in this direction and what are the pros and cons of a modular dump code?
+> >
+> > There are 2 major reasons I want to go in this direction, and think that
+> > these reasons are benificial to the FreeBSD project and its users.
+> >
+> > 1)  By moving all the dump code to Loadable Kernel Modules (LKM) it
+> >     makes this code easier to work on and enhance with new features.
+> >     I actually did this for the netdump code so that I didnt have
+> >     to go through reboot cycles while I debugged it.  I could simply
+> >     load the module, test it, unload it, edit, compile, repeat.
+> >
+> > 2)  I am active in the embeded world of small computers, and dump
+> >     code is a debug tool in that world that needs ripped out after
+> >     your done with developement.  Your embeded system isnt going
+> >     to do a core dump that anyone would ever see.  This shaves
+> >     a tiny amount of the size of the kernel, another important
+> >     thing in the embeded world.
+> 
+> Sounds good to me. Do you think it would take a large effort to
+> modularize all the dump code?
+
+No, I already have a working model, and have glanced at the crypted
+dump that just went in the tree, and do not see any thing taking very
+much effort at all.
+
+> Would each architecture need it's own
+> module for the machine dependent parts?
+
+The machine dependent part is tiny, most of it living in the pmap
+code.  At present there is a large amount of duplicated code accross
+the different architectures in the MD part, telling me since the
+code is duplicated almost to the last character that a refactor
+would move 95% of that code to MI, so 5% of what is already tiny
+would be left behind. 
+
+Realize that each architecture has to have its own module for the MI
+part since your aarch64 arm isnt going to run the amd64 code!
+
+> Thanks for your time. Will you be attending BSDCan?
+I have 7 days left to get a topic submitted, but I do plan to
+attend one way or another (I could probalby get a travel grant
+from the foundation if I didnt get accepted for a paper.)
+
+-- 
+Rod Grimes                                                 rgrimes@freebsd.org
+#+END_QUOTE
+
+** Live Dump
+*** Notes                                                          :noexport:
+** Dump to swap on zvol
+*** Notes                                                          :noexport:
 * Conclusion
   Though it may seem like core dumps are a solved problem from the past, it
   turns out the core dump code is an ever changing routine that is constantly
