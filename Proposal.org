@@ -18,15 +18,8 @@
 #+KEYWORDS:
 #+SUBTITLE:
 
-\pagebreak
-\onecolumn
-
-\tableofcontents
-
-\pagebreak
-\twocolumn
-
 #+BEGIN_COMMENT
+
 
 #* SUBMIT TO: secretary@asiabsdcon.org
 #* EMAIL:
@@ -168,36 +161,42 @@ doadump:
 
 #+END_COMMENT
 
-\begin{abstract}
+\pagebreak
+\onecolumn
+
+\tableofcontents
+
+\twocolumn
+
+* Abstract
 
 Crash dumps, also known as core dumps, have been a part of BSD since it's
-beginnings in UNIX. A core dump is ``a copy of memory that is saved on secondary
-storage by the kernel'' for debugging a system failure. Though 38 years have
-passed since =doadump= came about in Bell 32/V, core dumps are still needed and
-utilized in much the same way they were then. Given this one might assume the
-core dump code changed little over time but this assumption did not prove
-correct.
+beginnings in Research UNIX. A core dump is ``a copy of memory that is saved on
+secondary storage by the kernel'' for debugging a system failure[fn:1]. Though
+38 years have passed since =doadump()= came about in UNIX/32V, core dumps are
+still needed and utilized in much the same way they were then. Given this, one
+might assume the core dump code changed little over time but, with some
+research, this assumption has proven incorrect.
 
 What has changed over time is where core dumps are sent to and what processor
-architectures are supported. Previous to UNIX, core dumps were printed to a line
-printer or punch cards. At the birth of UNIX core dumps were made to magnetic
-tape and because UNIX supported only the PDP-11, it was the only architecture
-supported for dumps. Over time the specific dump device has changed from tape,
-to hard disk and even over the network to a remote machine. In addition, machine
-architecture support has evolved from different PDP-11 models to hp300, i386 up
-to the present day with AMD64 and ARM.
+architectures are supported. Previous to the advent of UNIX, core dumps were
+printed to a line printer or punch cards. At the birth of UNIX core dumps were
+made to magnetic tape and because UNIX only supported the PDP-11, it was the
+only architecture supported for dumps. Over time machine architecture support
+has evolved from different PDP-11 models to hp300, i386 up to the present day
+with AMD64 and ARM64. In addition the type of dump device has changed from tape,
+to hard disk or another machine over a LAN.
 
 The following paper begins with a quick background on what core dumps are and
-why operators might need them. Following that a complete history of core dumps
-in UNIX and BSD is produced, the current state of the core dump facility and
-some of the more common extensions in use. We conclude with a call to action for
-modularizing the core dump code such that different methods of core dump can be
-dynamically loaded into the kernel on demand.
+why operators might need them. Following that the current state of the core dump
+facility and some of the more common extensions in use are examined. We conclude
+with a call to action for upstreaming these extensions and modularizing the core
+dump code such that different methods of core dump can be dynamically loaded
+into the kernel on demand.
 
-# # In addition a call to action will
-# # be made for modularizing the core dump code.
+In addition a complete history of core dumps in UNIX and BSD was produced as
+research for this paper and can be found in the appendix.
 
-\end{abstract}
 
 * Introduction
 
@@ -205,19 +204,17 @@ dynamically loaded into the kernel on demand.
   preserving a copy of the contents of system memory at the time of a fatal error
   for later debugging. 
 
-# This copy or ``dump'' can be a machine readable form of the
-#   contents of system memory, the set of kernel pages that are active at the
-#   time of the crash, or a less complete but human readable form using debugger
-#   scripting.
+  This copy or ``dump'' can be a machine readable form of the complete contents
+  of system memory, or just the set of kernel pages that are active at the time
+  of the crash. There is also support for dumping a less complete but human
+  readable debugger scripting output.
 
   Throughout the history of UNIX operating systems, different methods have been
-  used to produce a core dump. The earliest (pre UNIX) core dumps were made
-  directly to a line printer, taking some hours to print. In the earliest UNIXes
-  magnetic tape was the only supported dump device but when hard disks support
-  matured swap space was used, obviating the need for changing out tapes before
-  a dump. Modern and embedded systems continue to introduce new constraints that
-  have motivated the need for newer methods of ex-filtrating a core dump from a
-  faltering kernel.
+  used to produce a core dump. In the earliest UNIXes magnetic tape was the
+  only supported dump device but when hard disk support matured swap space was
+  used, obviating the need for changing out tapes before a dump[fn:2]. Modern and
+  embedded systems continue to introduce new constraints that have motivated the
+  need for newer methods of ex-filtrating a core dump from a faltering kernel.
 
 # according to crash(8)
 
@@ -227,18 +224,21 @@ dynamically loaded into the kernel on demand.
 
   The FreeBSD variant of the BSD operating system has introduced gradual
   extensions to the core dumping facility. FreeBSD 6.2 introduced ``minidumps'',
-  a subset of a full dump that only consists of active kernel memory . FreeBSD
-  7.1's =textdumps(4)= consist of the result of debugger scripting at the time
-  of =panic(9)=. In FreeBSD 12 CURRENT public-key cryptographic encryption has
-  introduced support for core dumps. Though not in the main source tree,
-  compressed dumps and the ability to dump to a remote network device exist and
-  function. While promising, these extensions have been inconsistent in their
-  integration and interoperability. Notably, Mac OS X has also introduced
-  similar compression and network dumping features into their kernel albeit
-  with a distinct pedigree from FreeBSD.
+  a subset of a full dump that only consists of active kernel memory. FreeBSD
+  7.1's =textdumps(4)= consist of the result of debugger commands input
+  interactivly in DDB or via script[fn:11]. FreeBSD 12-CURRENT introduced
+  support for public-key cryptographic encryption of core dumps. 
+
+  Though not in the main source tree, compressed dumps and the ability to dump
+  to a remote network device exist and function. While promising, these
+  extensions have been inconsistent in their integration and interoperability.
+
+  Another BSD derived OS, Mac OS X has also introduced similar compression and
+  network dumping features into their kernel albeit with a distinct pedigree
+  from FreeBSD[fn:10][fn:12].
 
   # note Peter Wemm introduced minidumps 2006
-  # note Robert Watson introduced text dumps 2007?
+  # note Robert Watson introduced text dumps 2007
   # note def introduced encrypted dump 2016 https://reviews.freebsd.org/D4712
   # apple dumps
   # https://developer.apple.com/library/content/technotes/tn2004/tn2118.html
@@ -283,14 +283,14 @@ dynamically loaded into the kernel on demand.
   to swap and dumping over the network to a server with disk space for modern
   core dumps. Because dumps contain all the contents of memory any sensitive
   information in flight at the time of a crash appears in the dump. For this
-  reason and others encrypted dumps have been recently added to FreeBSD.
+  reason encrypted dumps have been recently added to FreeBSD[fn:13].
 
-  In documenting current dump code it occurred to the author and his
-  colleagues that the BSD dump code is not an unchanging relic, but a living
-  breathing code base that needs to be constantly adapted to the requirements of
-  the times. Because of this fact the author intends to provide a basis for the
-  argument that the core dump code should be modularized for the flexibility
-  that provides.
+  While dealing with the above problems the author and his colleagues became
+  intimately familiar with the state of the core dump code and its' associated
+  documentation. As users of the core dump code they felt a need for more
+  flexibility and extensibity in the core dump routines of FreeBSD. The author
+  intends to provide a basis for the argument that the core dump code should be
+  modularized for the flexibility that provides to operators.
 
   In addition it is hoped that the information herein is of use to inform
   further work on core dumps, failing that we hope it is interesting.
@@ -298,155 +298,19 @@ dynamically loaded into the kernel on demand.
 * The Present
 ** Core Dumps in UNIX                                              :noexport:
 ** Core Dumps in FreeBSD
-*** Full Dump Contents
-    The canonical form of core dump is the "full dump". Full dumps are created
-    via the =doadump()= code path which starts in =sys/kern/kern_shutdown.c=. The
-    resulting dump is an ELF formatted binary written to a configured swap
-    partition. The following is based on amd64 code and is the result of
-    =dumpsys_generic()=. This will be similar in format but different values for
-    different architectures.
-
-    #+CAPTION: Full Dump Format
-    #+NAME:   tab:dumpformat
-    #+ATTR_LATEX: :float nil :placement {p}
-    |---+-----------------+-----------------------------|
-    |   | Field           | Description                 |
-    |---+-----------------+-----------------------------|
-    | / | >              | <                          |
-    |   | Leader          | See Table [[tab:kdhheader]] |
-    |   | ELF Header      | See Table [[tab:elfheader]] |
-    |   | Program Headers |                             |
-    |   | Memory Chunks   |                             |
-    |   | Trailer         | See Table [[tab:kdhheader]] |
-    |---+-----------------+-----------------------------|
-
-    #+CAPTION: =kerneldumpheader= Format
-    #+NAME:   tab:kdhheader
-    #+ATTR_LATEX: :float nil :placement {p}
-    |---+---------------------+----------------------------|
-    |   | Field               | Value                      |
-    |---+---------------------+----------------------------|
-    | / | >                   | <                          |
-    |   | magic               | "FreeBSD Kernel Dump"      |
-    |   | architecture        | "amd64"                    |
-    |   | version             | 1 (kdh format version)     |
-    |   | architectureversion | 2                          |
-    |   | dumplength          | varies, excluding headers |
-    |   | dumptime            | current time              |
-    |   | blocksize           | block size                |
-    |   | hostname            | hostname                  |
-    |   | versionstring       | version of OS             |
-    |   | panicstring         | message given to =panic(9)= |
-    |   | parity              | parity bits               |
-    |---+---------------------+----------------------------|
-    # |---+---------------------|-----------------------------------|
-    # |   | Field               | Value                             |
-    # |---+---------------------|-----------------------------------|
-    # | / | <>                  |                                   |
-    # |   | magic               | "FreeBSD Kernel Dump"             |
-    # |   | architecture        | "amd64"                           |
-    # |   | version             | 1 (version of kernel dump format) |
-    # |   | architectureversion | 2                                 |
-    # |   | dumplength          | (varies, excluding headers)        |
-    # |   | dumptime            | (current time)                     |
-    # |   | blocksize           | (block size)                       |
-    # |   | hostname            | (hostname)                         |
-    # |   | versionstring       |                                   |
-    # |   | panicstring         |                                   |
-    # |   | parity              | (parity bits)                      |
-    # |---+---------------------|-----------------------------------|
-    # |---+---------------------|
-    # |   | Field               |
-    # |---+---------------------|
-    # | / | <>                  |
-    # |   | magic               |
-    # |   | architecture        |
-    # |   | version             |
-    # |   | architectureversion |
-    # |   | dumplength          |
-    # |   | dumptime            |
-    # |   | blocksize           |
-    # |   | hostname            |
-    # |   | versionstring       |
-    # |   | panicstring         |
-    # |   | parity              |
-    # |---+---------------------|
-
-    #+CAPTION: ELF Header Format
-    #+NAME:   tab:elfheader
-    #+ATTR_LATEX: :float nil
- |---+----------------------------+------------------------|
- |   | Field                      | Value                  |
- |---+----------------------------+------------------------|
- | / | >                          | <                      |
- |   | =ehdr.e_ident[EI_MAG0]=    | =0x7f=                 |
- |   | =ehdr.e_ident[EI_MAG1]=    | `E'                    |
- |   | =ehdr.e_ident[EI_MAG2]=    | `L'                    |
- |   | =ehdr.e_ident[EI_MAG3]=    | `F'                    |
- |   | =ehdr.e_ident[EI_CLASS]=   | 2 (64-bit)             |
- |   | =ehdr.e_ident[EI_DATA]=    | 1 (little endian)      |
- |   | =ehdr.e_ident[EI_VERSION]= | 1 (ELF version 1)      |
- |   | =ehdr.e_ident[EI_OSABI]=   | 255                    |
- |   | =ehdr.e_type=              | 4 (core)               |
- |   | =ehdr.e_machine=           | 62 (x86-64)            |
- |   | =ehdr.e_phoff=             | size of this header    |
- |   | =ehdr.e_flags=             | =0=                    |
- |   | =ehdr.e_ehsize=            | size of this header    |
- |   | =ehdr.e_phentsize=         | size of program header |
- |   | =ehdr.e_shentsize=         | size of section header |
- |---+----------------------------+------------------------|
- # TODO e_phoff may not be right
- # |---+----------------------------+-----------------------------------------------|
- # |   | Field                      | Value                                         |
- # |---+----------------------------+-----------------------------------------------|
- # | / | <>                         | <>                                            |
- # |   | =ehdr.e_ident[EI_MAG0]=    | =ELFMAG0= = =0x7f=                            |
- # |   | =ehdr.e_ident[EI_MAG1]=    | =ELFMAG1= = 'E'                               |
- # |   | =ehdr.e_ident[EI_MAG2]=    | =ELFMAG2= = 'L'                               |
- # |   | =ehdr.e_ident[EI_MAG3]=    | =ELFMAG3= = 'F'                               |
- # |   | =ehdr.e_ident[EI_CLASS]=   | =ELF_CLASS= = 2 (64-bit)                      |
- # |   | =ehdr.e_ident[EI_DATA]=    | =ELFDATA2LSB= = 1 (little endian)             |
- # |   | =ehdr.e_ident[EI_VERSION]= | =EV_CURRENT= = 1 (ELF version 1)              |
- # |   | =ehdr.e_ident[EI_OSABI]=   | =ELFOSABI_STANDALONE= = 255                   |
- # |   | =ehdr.e_type=              | =ET_CORE= = 4 (core)                          |
- # |   | =ehdr.e_machine=           | =EM_VALUE= = 62 (x86-64)                      |
- # |   | =ehdr.e_phoff=             | =sizeof(ehdr)= = (size of this header)        |
- # |   | =ehdr.e_flags=             | =0=                                           |
- # |   | =ehdr.e_ehsize=            | =sizeof(ehdr)= = (size of this header)        |
- # |   | =ehdr.e_phentsize=         | =sizeof(Elf_Phdr)= = (size of program header) |
- # |   | =ehdr.e_shentsize=         | =sizeof(Elf_Shdr)= = (size of section header) |
- # |---+----------------------------+-----------------------------------------------|
-
-
-**** Notes                                                         :noexport:
-   # - Canonical BSD Unix core memory dumping: All memory to a
-   #      pre-designated device
-   #   - 64kb indent, starts dumping at END of dump dev in case you
-   #        start swapping early in boot before you retrieve the dump.
-   #        4.2BSD?
-   #   - kern/kern\_shutdown.c (Traditional)
-
-   #   - Backtrace.io paper here
-   # https://backtrace.io/blog/improving-freebsd-kernel-debugging/
-   # https://en.wikipedia.org/wiki/Core_dump
-*** Minidump Contents
-*** Textdump Contents
-
-*** Modern Full Core Dump Procedure
-
+*** Full Core Dump Procedure
    When a UNIX-like system such as FreeBSD encounters an unrecoverable and
    unexpected error the kernel will "panic". Though the word panic has connotations
    of irrationality, the function =panic(9)= maintains composure while it
-   "[terminates] the running system" and attempts to save a core dump to a
+   shutsdown the running system and attempts to save a core dump to a
    configured dump device. 
-
- # this references D&I
  
-   What follows is a thorough description of the FreeBSD core dump routine starting
-   with =doadump()= in =sys/kern/kern_shutdown.c=. 
+   What follows is a thorough description of the FreeBSD core dump routine (as
+   of FreeBSD 11-RELEASE) starting with =doadump()= in
+   =sys/kern/kern_shutdown.c=.
 
    =doadump()= is called by =kern_reboot()=, which shuts down "the system cleanly to
-   prepare for reboot, halt, or power off." [4] =kern_reboot()= calls
+   prepare for reboot, halt, or power off." [fn:4] =kern_reboot()= calls
    =doadump()= if the =RB_DUMP= flag is set and the system is not "cold" or already
    creating a core dump. =doadump()= takes a boolean informing it to whether or not
    to take a "text dump", a form of dump carried out if the online kernel debugger,
@@ -478,72 +342,145 @@ dynamically loaded into the kernel on demand.
       5. Trailer
    5. End Dump
 
-      # this NULL byte claim needs verifcation
-      After this is done the kernel writes out a NULL byte to "Signal completion,
-      signoff and exit stage left." And our core dump is complete.
+   # this NULL byte claim needs verifcation
+   After this is done the kernel writes out a NULL byte to "Signal completion,
+   signoff and exit stage left." And our core dump is complete.
+
+**** Full Core Dump Contents
+     The canonical form of core dump is the "full dump". Full dumps are created
+     via the =doadump()= code path which starts in =sys/kern/kern_shutdown.c=. The
+     resulting dump is an ELF formatted binary written to a configured swap
+     partition. The following is based on amd64 code and is the result of
+     =dumpsys_generic()=. This will be similar in format but different values for
+     different architectures.
+
+     #+CAPTION: Full Dump Format
+     #+NAME:   tab:dumpformat
+     #+ATTR_LATEX: :float nil :placement {p}
+     |---+-----------------+-----------------------------|
+     |   | Field           | Description                 |
+     |---+-----------------+-----------------------------|
+     | / | >              | <                          |
+     |   | Leader          | See Table [[tab:kdhheader]] |
+     |   | ELF Header      | See Table [[tab:elfheader]] |
+     |   | Program Headers |                             |
+     |   | Memory Chunks   |                             |
+     |   | Trailer         | See Table [[tab:kdhheader]] |
+     |---+-----------------+-----------------------------|
+
+     #+CAPTION: =kerneldumpheader= Format
+     #+NAME:   tab:kdhheader
+     #+ATTR_LATEX: :float nil :placement {p}
+     |---+---------------------+----------------------------|
+     |   | Field               | Value                      |
+     |---+---------------------+----------------------------|
+     | / | >                   | <                          |
+     |   | magic               | "FreeBSD Kernel Dump"      |
+     |   | architecture        | "amd64"                    |
+     |   | version             | 1 (kdh format version)     |
+     |   | architectureversion | 2                          |
+     |   | dumplength          | varies, excluding headers |
+     |   | dumptime            | current time              |
+     |   | blocksize           | block size                |
+     |   | hostname            | hostname                  |
+     |   | versionstring       | version of OS             |
+     |   | panicstring         | message given to =panic(9)= |
+     |   | parity              | parity bits               |
+     |---+---------------------+----------------------------|
+     # |---+---------------------|-----------------------------------|
+     # |   | Field               | Value                             |
+     # |---+---------------------|-----------------------------------|
+     # | / | <>                  |                                   |
+     # |   | magic               | "FreeBSD Kernel Dump"             |
+     # |   | architecture        | "amd64"                           |
+     # |   | version             | 1 (version of kernel dump format) |
+     # |   | architectureversion | 2                                 |
+     # |   | dumplength          | (varies, excluding headers)        |
+     # |   | dumptime            | (current time)                     |
+     # |   | blocksize           | (block size)                       |
+     # |   | hostname            | (hostname)                         |
+     # |   | versionstring       |                                   |
+     # |   | panicstring         |                                   |
+     # |   | parity              | (parity bits)                      |
+     # |---+---------------------|-----------------------------------|
+     # |---+---------------------|
+     # |   | Field               |
+     # |---+---------------------|
+     # | / | <>                  |
+     # |   | magic               |
+     # |   | architecture        |
+     # |   | version             |
+     # |   | architectureversion |
+     # |   | dumplength          |
+     # |   | dumptime            |
+     # |   | blocksize           |
+     # |   | hostname            |
+     # |   | versionstring       |
+     # |   | panicstring         |
+     # |   | parity              |
+     # |---+---------------------|
+
+     #+CAPTION: ELF Header Format
+     #+NAME:   tab:elfheader
+     #+ATTR_LATEX: :float nil
+  |---+----------------------------+------------------------|
+  |   | Field                      | Value                  |
+  |---+----------------------------+------------------------|
+  | / | >                          | <                      |
+  |   | =ehdr.e_ident[EI_MAG0]=    | =0x7f=                 |
+  |   | =ehdr.e_ident[EI_MAG1]=    | `E'                    |
+  |   | =ehdr.e_ident[EI_MAG2]=    | `L'                    |
+  |   | =ehdr.e_ident[EI_MAG3]=    | `F'                    |
+  |   | =ehdr.e_ident[EI_CLASS]=   | 2 (64-bit)             |
+  |   | =ehdr.e_ident[EI_DATA]=    | 1 (little endian)      |
+  |   | =ehdr.e_ident[EI_VERSION]= | 1 (ELF version 1)      |
+  |   | =ehdr.e_ident[EI_OSABI]=   | 255                    |
+  |   | =ehdr.e_type=              | 4 (core)               |
+  |   | =ehdr.e_machine=           | 62 (x86-64)            |
+  |   | =ehdr.e_phoff=             | size of this header    |
+  |   | =ehdr.e_flags=             | =0=                    |
+  |   | =ehdr.e_ehsize=            | size of this header    |
+  |   | =ehdr.e_phentsize=         | size of program header |
+  |   | =ehdr.e_shentsize=         | size of section header |
+  |---+----------------------------+------------------------|
+  # TODO e_phoff may not be right
+  # |---+----------------------------+-----------------------------------------------|
+  # |   | Field                      | Value                                         |
+  # |---+----------------------------+-----------------------------------------------|
+  # | / | <>                         | <>                                            |
+  # |   | =ehdr.e_ident[EI_MAG0]=    | =ELFMAG0= = =0x7f=                            |
+  # |   | =ehdr.e_ident[EI_MAG1]=    | =ELFMAG1= = 'E'                               |
+  # |   | =ehdr.e_ident[EI_MAG2]=    | =ELFMAG2= = 'L'                               |
+  # |   | =ehdr.e_ident[EI_MAG3]=    | =ELFMAG3= = 'F'                               |
+  # |   | =ehdr.e_ident[EI_CLASS]=   | =ELF_CLASS= = 2 (64-bit)                      |
+  # |   | =ehdr.e_ident[EI_DATA]=    | =ELFDATA2LSB= = 1 (little endian)             |
+  # |   | =ehdr.e_ident[EI_VERSION]= | =EV_CURRENT= = 1 (ELF version 1)              |
+  # |   | =ehdr.e_ident[EI_OSABI]=   | =ELFOSABI_STANDALONE= = 255                   |
+  # |   | =ehdr.e_type=              | =ET_CORE= = 4 (core)                          |
+  # |   | =ehdr.e_machine=           | =EM_VALUE= = 62 (x86-64)                      |
+  # |   | =ehdr.e_phoff=             | =sizeof(ehdr)= = (size of this header)        |
+  # |   | =ehdr.e_flags=             | =0=                                           |
+  # |   | =ehdr.e_ehsize=            | =sizeof(ehdr)= = (size of this header)        |
+  # |   | =ehdr.e_phentsize=         | =sizeof(Elf_Phdr)= = (size of program header) |
+  # |   | =ehdr.e_shentsize=         | =sizeof(Elf_Shdr)= = (size of section header) |
+  # |---+----------------------------+-----------------------------------------------|
 
 
-*** FreeBSD Core Dump Extensions
+**** Notes                                                         :noexport:
+   # - Canonical BSD Unix core memory dumping: All memory to a
+   #      pre-designated device
+   #   - 64kb indent, starts dumping at END of dump dev in case you
+   #        start swapping early in boot before you retrieve the dump.
+   #        4.2BSD?
+   #   - kern/kern\_shutdown.c (Traditional)
 
-**** =netdump= - Network Dump
-   Crash dumping over the network can be especially useful in embedded systems
-   that do not have adequately sized swap partitions. 
+   #   - Backtrace.io paper here
+   # https://backtrace.io/blog/improving-freebsd-kernel-debugging/
+   # https://en.wikipedia.org/wiki/Core_dump
 
-   The original netdump code was written by Darrell Anderson at Duke around 2000
-   in the FreeBSD 4.x era as a kernel module. This code was later ported to
-   modern FreeBSD in 2010 at Sandvine with the intention of being part of
-   FreeBSD 9.0, which did not succeed. 
-
-   Currently there exists working netdump code at Isilon that applies cleanly to
-   versions of FreeBSD after 11 but before encrypted dump was added in FreeBSD
-   12-CURRENT. Network dumps have not yet made it into upstream FreeBSD.
-   
-
-***** Notes                                                        :noexport:
-     - Netdumps
-       - Duke University code from long ago
-       - Picked up by Ed Maste at Sandvine, dropped
-       - Picked up by Mark Johnston at Sandvine
-       - Maintained by Mark Johnston at Isilon
-       - ask someone why netdump is such a pain
-     - https://people.freebsd.org/~attilio/Sandvine/STABLE_8/netdump/netdump_alpha_1.diff
-       - https://web.archive.org/web/20040619062455*/http://www.cs.duke.edu/~anderson/freebsd/netdump/readme.html
-       - https://lists.freebsd.org/pipermail/freebsd-hackers/2010-July/032523.html
-
-**** Compressed Dump
-    Modern systems often have several hundred gigabytes of RAM and will soon
-    often have terabytes. This means full crash dumps, even minidumps, can be
-    much larger than most sensible amounts of swap.
-
-    Though =savecore(8)= has the ability to compress core dumps with the =`-z'=
-    option, this only compresses a core once it is copied into the main
-    filesystem. The core dump that was written to the swap partition remains
-    uncompressed. 
-
-    Compressed dumps see a 6 to 14 compression ratio for core dumps with a
-    slight penalty in the time require to write the dump initially^[8]. However the
-    following =savecore(8)= on the next boot is faster, resulting in a faster
-    dump and reboot sequence.
-
-    Compressed dumps have not yet made it into upstream FreeBSD.
-
-***** Notes                                                        :noexport:
-      - Maintained by Mark Johnston at Isilon 
-      - 2014
-      - https://lists.freebsd.org/pipermail/freebsd-arch/2014-November/016231.html
-**** =minidumpsz= - Minidump Size Estimation
-     =minidumpsz= is a kernel module that can do an online estimation of the
-     size of a minidump if it were to occur at the time ~sysctl
-     debug.mini_dump_size~ is called.
-
-     =minidumpsz= performs an inactive version of the minidump routine,
-     =minidumpsys()=, to estimate the size of a dump if it were to take place at
-     the time of the sysctl's calling.
-
-     =minidumpsz= was created by Rodney W. Grimes for the author's work at
-     Groupon and applies to FreeBSD 10.1 and FreeBSD 11. =minidumpsz= has not
-     yet made it into upstream FreeBSD.
-
+*** Minidump Procedure and Contents
+    
+*** Textdump Procedure and Contents
 
 ** Core Dumps in Mac OS X
    Mac OS X is capable of creating gzipped core dumps and dumping locally, or
@@ -862,7 +799,74 @@ dynamically loaded into the kernel on demand.
   Not yet done.
 
 * The Future
-  Write here on the push for modularization of dump code
+  There are several extensions to the FreeBSD core dump code that exist as sets
+  of patches on mailing lists and wikis but are not found in upstream FreeBSD.
+
+  First we provide some background on several extensions and tools including
+  dumping over the network, compressed dumps and a tool for estimating the size
+  of a minidump. Then we will explore the benifets of modularized core dump
+  code.
+
+** =netdump= - Network Dump
+ Crash dumping over the network can be especially useful in embedded systems
+ that do not have adequately sized swap partitions. 
+
+ The original netdump code was written by Darrell Anderson at Duke around 2000
+ in the FreeBSD 4.x era as a kernel module. This code was later ported to
+ modern FreeBSD in 2010 at Sandvine with the intention of being part of
+ FreeBSD 9.0, which did not succeed. 
+
+ Currently there exists working netdump code at Isilon that applies cleanly to
+ versions of FreeBSD after 11 but before encrypted dump was added in FreeBSD
+ 12-CURRENT. Network dumps have not yet made it into upstream FreeBSD.
+   
+
+*** Notes                                                          :noexport:
+   - Netdumps
+     - Duke University code from long ago
+     - Picked up by Ed Maste at Sandvine, dropped
+     - Picked up by Mark Johnston at Sandvine
+     - Maintained by Mark Johnston at Isilon
+     - ask someone why netdump is such a pain
+   - https://people.freebsd.org/~attilio/Sandvine/STABLE_8/netdump/netdump_alpha_1.diff
+     - https://web.archive.org/web/20040619062455*/http://www.cs.duke.edu/~anderson/freebsd/netdump/readme.html
+     - https://lists.freebsd.org/pipermail/freebsd-hackers/2010-July/032523.html
+
+** Compressed Dump
+  Modern systems often have several hundred gigabytes of RAM and will soon
+  often have terabytes. This means full crash dumps, even minidumps, can be
+  much larger than most sensible amounts of swap.
+
+  Though =savecore(8)= has the ability to compress core dumps with the =`-z'=
+  option, this only compresses a core once it is copied into the main
+  filesystem. The core dump that was written to the swap partition remains
+  uncompressed. 
+
+  Compressed dumps see a 6 to 14 compression ratio for core dumps with a
+  slight penalty in the time require to write the dump initially[fn:8]. However the
+  following =savecore(8)= on the next boot is faster, resulting in a faster
+  dump and reboot sequence.
+
+  Compressed dumps have not yet made it into upstream FreeBSD.
+
+*** Notes                                                          :noexport:
+    - Maintained by Mark Johnston at Isilon 
+    - 2014
+    - https://lists.freebsd.org/pipermail/freebsd-arch/2014-November/016231.html
+** =minidumpsz= - Minidump Size Estimation
+   =minidumpsz= is a kernel module that can do an online estimation of the
+   size of a minidump if it were to occur at the time ~sysctl
+   debug.mini_dump_size~ is called.
+
+   =minidumpsz= performs an inactive version of the minidump routine,
+   =minidumpsys()=, to estimate the size of a dump if it were to take place at
+   the time of the sysctl's calling.
+
+   =minidumpsz= was created by Rodney W. Grimes for the author's work at
+   Groupon and applies to FreeBSD 10.1 and FreeBSD 11. =minidumpsz= has not
+   yet made it into upstream FreeBSD.
+
+** Modularizing Dump Code
 * Conclusion
   Though it may seem like core dumps are a solved problem from the past, it
   turns out the core dump code is an ever changing routine that is constantly
@@ -884,18 +888,6 @@ dynamically loaded into the kernel on demand.
   in general for making this day and paper possible.
 
 
-* References
-
- 1. The Design and Implementation of the FreeBSD operating system by McKusick, Neville-Neil, and Watson
- 2. crash(8) - 3BSD
- 3. man 9 panic - https://www.freebsd.org/cgi/man.cgi?query=panic&apropos=0&sektion=0&manpath=FreeBSD+10.3-RELEASE+and+Ports&arch=default&format=html
- 4. =kern_shutdown.c= - =sys/kern/kern_shutdown.c=
- 5. Unix History Repository - https://github.com/dspinellis/unix-history-repo
- 6. A Repository with 44 Years of Unix Evolution - http://www.dmst.aueb.gr/dds/pubs/conf/2015-MSR-Unix-History/html/Spi15c.html
- 7. https://en.wikipedia.org/wiki/Core_dump
- 8. https://lists.freebsd.org/pipermail/freebsd-arch/2014-November/016231.html
- 9. https://en.wikipedia.org/wiki/Core_dump
- 10. https://developer.apple.com/library/content/technotes/tn2004/tn2118.html
 * Appendix
 ** The Past: A History Complete of Core Dumps
 
@@ -1916,3 +1908,21 @@ Differential Revision:	https://reviews.freebsd.org/D5848
       - sys/amd64/amd64/machdep\_minidump.c
       - and rarely bits might be in sys/amd64/amd64/pmap.c
 
+
+* Footnotes
+
+[fn:13] https://svnweb.freebsd.org/base?view=revision&revision=309818
+
+
+[fn:1] The Design and Implementation of the FreeBSD operating system by McKusick, Neville-Neil, and Watson
+[fn:2] crash(8) - 3BSD
+[fn:3] man 9 panic - https://www.freebsd.org/cgi/man.cgi?query=panic&apropos=0&sektion=0&manpath=FreeBSD+10.3-RELEASE+and+Ports&arch=default&format=html
+[fn:4] =kern_shutdown.c= - https://svnweb.freebsd.org/base/head/sys/kern/kern_shutdown.c?view=markup#l336
+[fn:5] Unix History Repository - https://github.com/dspinellis/unix-history-repo
+[fn:6] A Repository with 44 Years of Unix Evolution - http://www.dmst.aueb.gr/dds/pubs/conf/2015-MSR-Unix-History/html/Spi15c.html
+[fn:7] https://en.wikipedia.org/wiki/Core_dump
+[fn:8] https://lists.freebsd.org/pipermail/freebsd-arch/2014-November/016231.html
+[fn:9] https://en.wikipedia.org/wiki/Core_dump
+[fn:10] https://developer.apple.com/library/content/technotes/tn2004/tn2118.html
+[fn:11] https://lists.freebsd.org/pipermail/freebsd-current/2007-December/081626.html
+[fn:12] https://github.com/opensource-apple/xnu/blob/27ffc00f33925b582391b1ef318b78b8bd3939d1/osfmk/kdp/kdp_core.c#L527
