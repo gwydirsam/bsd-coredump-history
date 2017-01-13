@@ -133,6 +133,7 @@ doadump:
 \onecolumn
 
 \tableofcontents
+\listoftables
 
 \twocolumn
 
@@ -265,6 +266,7 @@ research for this paper and can be found in the appendix.
 
 * The Present
 ** Core Dumps in UNIX                                              :noexport:
+   There is no "UNIX" anymore...
 ** Core Dumps in FreeBSD
 *** Full Core Dump Procedure
    When a UNIX-like system such as FreeBSD encounters an unrecoverable and
@@ -302,136 +304,134 @@ research for this paper and can be found in the appendix.
    1. Fill in the ELF header.
    2. Calculate the dump size.
    3. Determine if the dump device is large enough.
-   4. Begin Dump
-      1. Leader (Padding)
+   4. Fill in kernel dump header
+   5. Begin Dump
+      1. Leader 
       2. ELF Header
       3. Program Headers
       4. Memory Chunks
       5. Trailer
-   5. End Dump
+   6. End Dump
 
    # this NULL byte claim needs verifcation
    After this is done the kernel writes out a NULL byte to "Signal completion,
    signoff and exit stage left." And our core dump is complete.
 
-**** Full Core Dump Contents
-     The canonical form of core dump is the "full dump". Full dumps are created
-     via the =doadump()= code path which starts in =sys/kern/kern_shutdown.c=. The
-     resulting dump is an ELF formatted binary written to a configured swap
-     partition. The following is based on amd64 code and is the result of
-     =dumpsys_generic()=. This will be similar in format but different values for
-     different architectures.
+*** Full Core Dump Contents
+    The canonical form of core dump is the "full dump". Full dumps are created
+    via the =doadump()= code path which starts in =sys/kern/kern_shutdown.c=. The
+    resulting dump is an ELF formatted binary written to a configured swap
+    partition. The following is based on amd64 code and is the result of
+    =dumpsys_generic()=. This will be similar in format but different values for
+    different architectures.
 
-     #+CAPTION: Full Dump Format
-     #+NAME:   tab:dumpformat
-     #+ATTR_LATEX: :float nil :placement {p}
-     |---+-----------------+-----------------------------|
-     |   | Field           | Description                 |
-     |---+-----------------+-----------------------------|
-     | / | >              | <                          |
-     |   | Leader          | See Table [[tab:kdhheader]] |
-     |   | ELF Header      | See Table [[tab:elfheader]] |
-     |   | Program Headers |                             |
-     |   | Memory Chunks   |                             |
-     |   | Trailer         | See Table [[tab:kdhheader]] |
-     |---+-----------------+-----------------------------|
+    #+CAPTION: Full Dump Format
+    #+NAME:   tab:dumpformat
+    |---+-----------------+-----------------------------|
+    |   | Field           | Description                 |
+    |---+-----------------+-----------------------------|
+    | / | >              | <                          |
+    |   | Leader          | See Table [[tab:kdhheader]] |
+    |   | ELF Header      | See Table [[tab:elfheader]] |
+    |   | Program Headers |                             |
+    |   | Memory Chunks   |                             |
+    |   | Trailer         | See Table [[tab:kdhheader]] |
+    |---+-----------------+-----------------------------|
 
-     #+CAPTION: =kerneldumpheader= Format
-     #+NAME:   tab:kdhheader
-     #+ATTR_LATEX: :float nil :placement {p}
-     |---+---------------------+----------------------------|
-     |   | Field               | Value                      |
-     |---+---------------------+----------------------------|
-     | / | >                   | <                          |
-     |   | magic               | "FreeBSD Kernel Dump"      |
-     |   | architecture        | "amd64"                    |
-     |   | version             | 1 (kdh format version)     |
-     |   | architectureversion | 2                          |
-     |   | dumplength          | varies, excluding headers |
-     |   | dumptime            | current time              |
-     |   | blocksize           | block size                |
-     |   | hostname            | hostname                  |
-     |   | versionstring       | version of OS             |
-     |   | panicstring         | message given to =panic(9)= |
-     |   | parity              | parity bits               |
-     |---+---------------------+----------------------------|
-     # |---+---------------------|-----------------------------------|
-     # |   | Field               | Value                             |
-     # |---+---------------------|-----------------------------------|
-     # | / | <>                  |                                   |
-     # |   | magic               | "FreeBSD Kernel Dump"             |
-     # |   | architecture        | "amd64"                           |
-     # |   | version             | 1 (version of kernel dump format) |
-     # |   | architectureversion | 2                                 |
-     # |   | dumplength          | (varies, excluding headers)        |
-     # |   | dumptime            | (current time)                     |
-     # |   | blocksize           | (block size)                       |
-     # |   | hostname            | (hostname)                         |
-     # |   | versionstring       |                                   |
-     # |   | panicstring         |                                   |
-     # |   | parity              | (parity bits)                      |
-     # |---+---------------------|-----------------------------------|
-     # |---+---------------------|
-     # |   | Field               |
-     # |---+---------------------|
-     # | / | <>                  |
-     # |   | magic               |
-     # |   | architecture        |
-     # |   | version             |
-     # |   | architectureversion |
-     # |   | dumplength          |
-     # |   | dumptime            |
-     # |   | blocksize           |
-     # |   | hostname            |
-     # |   | versionstring       |
-     # |   | panicstring         |
-     # |   | parity              |
-     # |---+---------------------|
+    #+CAPTION: =kerneldumpheader= Format
+    #+NAME:   tab:kdhheader
+    |---+-----------------------+----------------------------|
+    |   | Field                 | Value                      |
+    |---+-----------------------+----------------------------|
+    | / | >                     | <                          |
+    |   | =magic=               | "FreeBSD Kernel Dump"      |
+    |   | =architecture=        | "amd64"                    |
+    |   | =version=             | 1 (kdh format version)     |
+    |   | =architectureversion= | 2                          |
+    |   | =dumplength=          | varies, excludes headers |
+    |   | =dumptime=            | current time               |
+    |   | =blocksize=           | block size                 |
+    |   | =hostname=            | hostname                   |
+    |   | =versionstring=       | version of OS              |
+    |   | =panicstring=         | =panic(9)= message |
+    |   | =parity=              | parity bits                |
+    |---+-----------------------+----------------------------|
+    # |---+---------------------|-----------------------------------|
+    # |   | Field               | Value                             |
+    # |---+---------------------|-----------------------------------|
+    # | / | <>                  |                                   |
+    # |   | magic               | "FreeBSD Kernel Dump"             |
+    # |   | architecture        | "amd64"                           |
+    # |   | version             | 1 (version of kernel dump format) |
+    # |   | architectureversion | 2                                 |
+    # |   | dumplength          | (varies, excluding headers)        |
+    # |   | dumptime            | (current time)                     |
+    # |   | blocksize           | (block size)                       |
+    # |   | hostname            | (hostname)                         |
+    # |   | versionstring       |                                   |
+    # |   | panicstring         |                                   |
+    # |   | parity              | (parity bits)                      |
+    # |---+---------------------|-----------------------------------|
+    # |---+---------------------|
+    # |   | Field               |
+    # |---+---------------------|
+    # | / | <>                  |
+    # |   | magic               |
+    # |   | architecture        |
+    # |   | version             |
+    # |   | architectureversion |
+    # |   | dumplength          |
+    # |   | dumptime            |
+    # |   | blocksize           |
+    # |   | hostname            |
+    # |   | versionstring       |
+    # |   | panicstring         |
+    # |   | parity              |
+    # |---+---------------------|
 
-     #+CAPTION: ELF Header Format
-     #+NAME:   tab:elfheader
-     #+ATTR_LATEX: :float nil
-  |---+-----------------------+------------------------|
-  |   | =ehdr= Field          | Value                  |
-  |---+-----------------------+------------------------|
-  | / | >                     | <                      |
-  |   | =e_ident[EI_MAG0]=    | =0x7f=                 |
-  |   | =e_ident[EI_MAG1]=    | `E'                    |
-  |   | =e_ident[EI_MAG2]=    | `L'                    |
-  |   | =e_ident[EI_MAG3]=    | `F'                    |
-  |   | =e_ident[EI_CLASS]=   | 2 (64-bit)             |
-  |   | =e_ident[EI_DATA]=    | 1 (little endian)      |
-  |   | =e_ident[EI_VERSION]= | 1 (ELF version 1)      |
-  |   | =e_ident[EI_OSABI]=   | 255                    |
-  |   | =e_type=              | 4 (core)               |
-  |   | =e_machine=           | 62 (x86-64)            |
-  |   | =e_phoff=             | size of this header    |
-  |   | =e_flags=             | =0=                    |
-  |   | =e_ehsize=            | size of this header    |
-  |   | =e_phentsize=         | size of program header |
-  |   | =e_shentsize=         | size of section header |
-  |---+-----------------------+------------------------|
-  # TODO e_phoff may not be right
-  # |---+----------------------------+-----------------------------------------------|
-  # |   | Field                      | Value                                         |
-  # |---+----------------------------+-----------------------------------------------|
-  # | / | <>                         | <>                                            |
-  # |   | =ehdr.e_ident[EI_MAG0]=    | =ELFMAG0= = =0x7f=                            |
-  # |   | =ehdr.e_ident[EI_MAG1]=    | =ELFMAG1= = 'E'                               |
-  # |   | =ehdr.e_ident[EI_MAG2]=    | =ELFMAG2= = 'L'                               |
-  # |   | =ehdr.e_ident[EI_MAG3]=    | =ELFMAG3= = 'F'                               |
-  # |   | =ehdr.e_ident[EI_CLASS]=   | =ELF_CLASS= = 2 (64-bit)                      |
-  # |   | =ehdr.e_ident[EI_DATA]=    | =ELFDATA2LSB= = 1 (little endian)             |
-  # |   | =ehdr.e_ident[EI_VERSION]= | =EV_CURRENT= = 1 (ELF version 1)              |
-  # |   | =ehdr.e_ident[EI_OSABI]=   | =ELFOSABI_STANDALONE= = 255                   |
-  # |   | =ehdr.e_type=              | =ET_CORE= = 4 (core)                          |
-  # |   | =ehdr.e_machine=           | =EM_VALUE= = 62 (x86-64)                      |
-  # |   | =ehdr.e_phoff=             | =sizeof(ehdr)= = (size of this header)        |
-  # |   | =ehdr.e_flags=             | =0=                                           |
-  # |   | =ehdr.e_ehsize=            | =sizeof(ehdr)= = (size of this header)        |
-  # |   | =ehdr.e_phentsize=         | =sizeof(Elf_Phdr)= = (size of program header) |
-  # |   | =ehdr.e_shentsize=         | =sizeof(Elf_Shdr)= = (size of section header) |
-  # |---+----------------------------+-----------------------------------------------|
+    #+CAPTION: =ehdr= ELF Header Format
+    #+NAME:   tab:elfheader
+ |---+-----------------------+------------------------|
+ |   | Field          | Value                  |
+ |---+-----------------------+------------------------|
+ | / | >                     | <                      |
+ |   | =e_ident[EI_MAG0]=    | =0x7f=                 |
+ |   | =e_ident[EI_MAG1]=    | `E'                    |
+ |   | =e_ident[EI_MAG2]=    | `L'                    |
+ |   | =e_ident[EI_MAG3]=    | `F'                    |
+ |   | =e_ident[EI_CLASS]=   | 2 (64-bit)             |
+ |   | =e_ident[EI_DATA]=    | 1 (little endian)      |
+ |   | =e_ident[EI_VERSION]= | 1 (ELF version 1)      |
+ |   | =e_ident[EI_OSABI]=   | 255                    |
+ |   | =e_type=              | 4 (core)               |
+ |   | =e_machine=           | 62 (x86-64)            |
+ |   | =e_phoff=             | size of this header    |
+ |   | =e_flags=             | =0=                    |
+ |   | =e_ehsize=            | size of this header    |
+ |   | =e_phentsize=         | size of program header |
+ |   | =e_shentsize=         | size of section header |
+ |---+-----------------------+------------------------|
+ # TODO e_phoff may not be right
+ # |---+----------------------------+-----------------------------------------------|
+ # |   | Field                      | Value                                         |
+ # |---+----------------------------+-----------------------------------------------|
+ # | / | <>                         | <>                                            |
+ # |   | =ehdr.e_ident[EI_MAG0]=    | =ELFMAG0= = =0x7f=                            |
+ # |   | =ehdr.e_ident[EI_MAG1]=    | =ELFMAG1= = 'E'                               |
+ # |   | =ehdr.e_ident[EI_MAG2]=    | =ELFMAG2= = 'L'                               |
+ # |   | =ehdr.e_ident[EI_MAG3]=    | =ELFMAG3= = 'F'                               |
+ # |   | =ehdr.e_ident[EI_CLASS]=   | =ELF_CLASS= = 2 (64-bit)                      |
+ # |   | =ehdr.e_ident[EI_DATA]=    | =ELFDATA2LSB= = 1 (little endian)             |
+ # |   | =ehdr.e_ident[EI_VERSION]= | =EV_CURRENT= = 1 (ELF version 1)              |
+ # |   | =ehdr.e_ident[EI_OSABI]=   | =ELFOSABI_STANDALONE= = 255                   |
+ # |   | =ehdr.e_type=              | =ET_CORE= = 4 (core)                          |
+ # |   | =ehdr.e_machine=           | =EM_VALUE= = 62 (x86-64)                      |
+ # |   | =ehdr.e_phoff=             | =sizeof(ehdr)= = (size of this header)        |
+ # |   | =ehdr.e_flags=             | =0=                                           |
+ # |   | =ehdr.e_ehsize=            | =sizeof(ehdr)= = (size of this header)        |
+ # |   | =ehdr.e_phentsize=         | =sizeof(Elf_Phdr)= = (size of program header) |
+ # |   | =ehdr.e_shentsize=         | =sizeof(Elf_Shdr)= = (size of section header) |
+ # |---+----------------------------+-----------------------------------------------|
 
 
 **** Notes                                                         :noexport:
@@ -447,14 +447,314 @@ research for this paper and can be found in the appendix.
    # https://en.wikipedia.org/wiki/Core_dump
 
 *** Minidump Procedure and Contents
+  FreeBSD 6.2 introduced a new form of core dump termed, "minidumps". Instead of
+  dumping all of phsyical memory to guarantee all relevent information is
+  archived, minidumps dump ``only memory pages in use by the kernel.''[fn:14] 
+
+  Minidumps use a custom format in lieu of ELF. The format of a modern minidump
+  (version 2) can be found in table [[tab:minidumpformat]].
+
+  #+CAPTION: Mini Dump Format
+  #+NAME:   tab:minidumpformat
+  |---+-----------------------+----------------------------------|
+  |   | Field                 | Description                      |
+  |---+-----------------------+----------------------------------|
+  | / | >                     | <                                |
+  |   | Leader                | See Table [[tab:kdhheader]]      |
+  |   | Minidump Header       | See Table [[tab:minidumpheader]] |
+  |   | Message Buffer        | (message buffer contents) |
+  |   | Bitmap                | (map of kernel pages in pmap)    |
+  |   | Kernel Page Directory |                                  |
+  |   | Memory Chunks         |                                  |
+  |   | Trailer               | See Table [[tab:kdhheader]]      |
+  |---+-----------------------+----------------------------------|
+
+  #+CAPTION: =minidumphdr= Format
+  #+NAME:   tab:minidumpheader
+  |---+---------------------+-------------------------------|
+  |   | Field | Value                         |
+  |---+---------------------+-------------------------------|
+  | / | >                   | <                             |
+  |   | =magic=             | ``minidump FreeBSD/amd64''    |
+  |   | =version=           | 2                             |
+  |   | =msgbufsize=        | (size of message buffer) |
+  |   | =bitmapsize=        | (size of bitmap)              |
+  |   | =pmapsize=          | (size of physical memory map) |
+  |   | =kernbase=          | (ptr to start of kernel mem)  |
+  |   | =dmapbase=          | (ptr to start of direct map)  |
+  |   | =dmapend=           | (ptr to end of direct map)    |
+  |---+---------------------+-------------------------------|
+
+  The minidump procedure in general is similiar to that of the full dump but
+  with the added step of creating a bitmap that indicates which pages are to
+  become part of the dump. The minidump procedure detailed here is based on the
+  AMD64 code as found in =sys/amd64/amd64/minidump_machdep.c=[fn:15], but it nearly
+  identical for other architectures.
+
+  1. Create bitmap describing pages to be dumped.
+  2. Calculate the dump size.
+  3. Determine if the dump device is large enough.
+  4. Fill in minidump header
+  5. Fill in kernel dump header
+  6. Begin Dump
+     1. Leader
+     2. Minidump Header
+     3. Message Buffer
+     4. Bitmap
+     5. Kernel Page Directory
+     6. Memory Chunks
+     7. Trailer
+  7. End Dump
+
+     The minidump will fail for any of the reasons a full dump will and also if
+     the dump map grows while creating it. This will cause the routine to retry
+     up to =dump_retry_count= times, the default is 5 times but can be set with
+     the sysctl =machdep.dump_retry_count=.
+
+**** Notes                                                         :noexport:
+     - https://backtrace.io/blog/improving-freebsd-kernel-debugging/
+       - this page is wrong, minidumps are the default as of 7.0
+       #+BEGIN_SRC c
+       #define MINIDUMP_MAGIC   "minidump FreeBSD/amd64"
+       #define MINIDUMP_VERSION 2
+       
+       struct minidumphdr {
+           char magic[24];
+           uint32_t version;
+           uint32_t msgbufsize;
+           uint32_t bitmapsize;
+           uint32_t pmapsize;
+           uint64_t kernbase;
+           uint64_t dmapbase;
+           uint64_t dmapend;
+       }
+       #+END_SRC
+     - https://svnweb.freebsd.org/base/head/sys/amd64/amd64/minidump_machdep.c?revision=157908&view=markup
+     #+BEGIN_QUOTE
+     r157908 | peter | 2006-04-20 23:24:50 -0500 (Thu, 20 Apr 2006) | 39 lines
+
+     Introduce minidumps.  Full physical memory crash dumps are still available
+     via the debug.minidump sysctl and tunable.
+
+     Traditional dumps store all physical memory.  This was once a good thing
+     when machines had a maximum of 64M of ram and 1GB of kvm.  These days,
+     machines often have many gigabytes of ram and a smaller amount of kvm.
+     libkvm+kgdb don't have a way to access physical ram that is not mapped
+     into kvm at the time of the crash dump, so the extra ram being dumped
+     is mostly wasted.
+
+     Minidumps invert the process.  Instead of dumping physical memory in
+     in order to guarantee that all of kvm's backing is dumped, minidumps
+     instead dump only memory that is actively mapped into kvm.
+
+     amd64 has a direct map region that things like UMA use.  Obviously we
+     cannot dump all of the direct map region because that is effectively
+     an old style all-physical-memory dump.  Instead, introduce a bitmap
+     and two helper routines (dump_add_page(pa) and dump_drop_page(pa)) that
+     allow certain critical direct map pages to be included in the dump.
+     uma_machdep.c's allocator is the intended consumer.
+
+     Dumps are a custom format.  At the very beginning of the file is a header,
+     then a copy of the message buffer, then the bitmap of pages present in
+     the dump, then the final level of the kvm page table trees (2MB mappings
+     are expanded into a 4K page mappings), then the sparse physical pages
+     according to the bitmap.  libkvm can now conveniently access the kvm
+     page table entries.
+
+     Booting my test 8GB machine, forcing it into ddb and forcing a dump
+     leads to a 48MB minidump.  While this is a best case, I expect minidumps
+     to be in the 100MB-500MB range.  Obviously, never larger than physical
+     memory of course.
+
+     minidumps are on by default.  It would want be necessary to turn them off
+     if it was necessary to debug corrupt kernel page table management as that
+     would mess up minidumps as well.
+
+     Both minidumps and regular dumps are supported on the same machine.
+     #+END_QUOTE
     
 *** Textdump Procedure and Contents
+
+**** Notes                                                         :noexport:
+     - https://lists.freebsd.org/pipermail/freebsd-current/2007-December/081626.html
+     - texdump email
+       #+BEGIN_QUOTE
+       Dear all,
+
+       I've received a few textdump-related questions that I thought I'd share my 
+       answers to.
+
+       (1) What information is in a textdump?
+
+       The textdump is stored as a tarfile with several subfiles in it:
+
+       config.txt - Kernel configuration, if compiled into kernel
+       ddb.txt - Captured DDB output, if present
+       msgbuf.txt - Kernel message buffer
+       panic.txt - Kernel panic message, if there was a panic
+       version.txt - Kernel version string
+
+       It is easy to add new files to textdumps, so if there's some easily 
+       extractable kernel state that you feel should go in there, drop me an e-mail 
+       and/or send a patch.
+
+       (2) Is there any information in a textdump that can't be acquired using kgdb 
+       and other available dump analysis tools?
+
+       In principle no, as normal dumps include all kernel memory, and textdumps 
+       operate by inspecting kernel memory using DDB, capturing only small but 
+       presumably relevant parts.  However, there are some important differences in 
+       approach that mean that textdumps can be used in ways that regular dumps can't 
+       easily be:
+
+       - DDB textdumps are very small. Including a full debugging session, kernel 
+       message buffer, and kernel configuration, my textdumps are frequently around 
+       100k uncompressed. This makes it possible to use them on very small machines, 
+       store them for an extended period, e-mail them around, etc, in a way that you 
+       can't currently do with kernel memory dumps. This improved usability will 
+       (hopefully) improve our bug and crash management.
+
+       - DDB is a specialized debugging tool with intimate knowledge of the kernel, 
+       and there are types of data trivially extracted with DDB that are awkward or 
+       quite difficult to extract using kgdb or other currently available dump 
+       analysis tools. Locking, waiting, and process information are examples of 
+       where automatic extraction is currently only possible with DDB, and one of the 
+       reasons many developers prefer to begin any diagnosis with an interactive DDB 
+       session.
+
+       - DDB textdumps can be used without the exact source tree, kernel 
+       configuration, built kernel, and debug symbols, as they interpret rather than 
+       save the pages of memory. They're even an architecture-independent file format 
+       so you don't need a cross-debugger. Having that additional context is useful 
+       (ability to map symbol+offset to line of code), but you can actually go a 
+       remarkable way without it, especially looking at the results in a PR 
+       potentially years later.
+
+       (3) What do I lose by using textdumps?
+
+       To be clear, there are also some important things that textdumps can't do -- 
+       principally, a textdump doesn't contain all kernel memory, so your textdump 
+       output is all you have. If you need to extract detailed structure information 
+       for something DDB doesn't understand, or that you don't think of in advance or 
+       during a DDB session, then there's nothing to fall back on except configuring 
+       a textdump or regular dump and waiting for the panic to happen again.
+
+       (4) When should I use textdumps?
+
+       Minidumps remain the default in 7.x and 8.x, and full dumps remain the default 
+       in 6.x and earlier. Textdumps must be specifically enabled by the 
+       administrator to be used.
+
+       DDB is an excellent live debugging tool whose use has been limited to 
+       situations where there is an accessible video console, or more ideally serial 
+       or firewire console to a second box, and generally requiring an experienced 
+       developer to be available to drive debugging. There are many problems that can 
+       be pretty much instantly understood with a couple of DDB commands, so these 
+       limitations impacted debugging effectiveness.
+
+       The goal of adding DDB capture output, scripting, and textdumps was to broaden 
+       the range of situations in which DDB could be used: now it is usable more 
+       easily for post-mortem analysis, no console or second machine is required, and 
+       a developer can install, or even e-mail, a script of DDB commands to run 
+       automatically. Developers can simply define a few scripts to handle various 
+       DDB cases, such as panic, and get a nice debugging bundle to look at later.
+
+       When I'm debugging network stack problems, I typically want a fairly small set 
+       of DDB commands to be run by the user, and the output sent back, and now it 
+       will go from "Read the chapter on kernel debugging, set up a serial console, 
+       run the following commands, copy and paste from your serial console -- oh, you 
+       don't have a serial console, perhaps hand-copy these fields or use a digital 
+       camera" to "run the following ddb(8) command and when the box reboots, send me 
+       the tarball in /var/crash".
+
+       I anticipate that textdumps will see use when developers are exchanging e-mail 
+       with users reporting problems and trying to gather concise summaries of 
+       information about a crash with minimum downtime and maximum portability, in 
+       embedded environments where dumping kernel memory to flash is tricky, or in 
+       order to save a transcript of an interactive DDB session when testing new 
+       features locally.
+
+       Another interesting advantage of textdumps is that it's easy to inspect them 
+       for confidential/identifying information and mask or purge it. When someone 
+       sends out a kernel memory dump, it potentially contains a lot of sensitive 
+       information, and most people (including me) would have difficulty making sure 
+       all sensitive information was purged safely.
+
+       (5) I want to collect DDB output, but still need memory dumps -- can I do 
+       both?
+
+       Yes and no.
+
+       Yes, you can use the DDB output capture buffer and scripting without using a 
+       textdump, as the capture buffer is stored in kernel memory. You can print it 
+       using kgdb, and we should probably add that capability to ddb(8) also. End 
+       your script with "call doadump; reset" but don't "textdump set". For example:
+
+       ddb script kdb.enter.panic="capture on;show pcpu;trace;ps;show 
+       locks;alltrace;show alllocks;show lockedvnods;call doadump;reset"
+
+       No, because you must pick one of the three dump layouts (dump, minidump, 
+       textdump) to write to the swap partition -- you can't write out all three and 
+       then decide which to extract later. In principle this could be changed so that 
+       we actually write out a textdump section and a full/minidump, but that's not 
+       implemented.
+
+       (6) I have a serial console so don't need textudmps, can I still use DDB 
+       scripting to manage a crash?
+
+       Yes. You can set up scripts in exactly the same way as with textdumps, only 
+       omit the textdump bits and end with a "reset" to reboot the system when done. 
+       That way you can extract the results from the serial console log. I.e.,
+
+       ddb script kdb.enter.panic="show pcpu;trace;show locks;ps;alltrace;show 
+       alllocks;show lockedvnods;reset"
+
+       (7) I'm in DDB and I suddenly realize I want to save the output, and I haven't 
+       configured textdumps. What do I do?
+
+       As with normal dumps, you must previously have configured support for a dump 
+       partition. These days, that is done automatically whenever you have swap 
+       configured on the box, so unless you're in single-user mode or don't have swap 
+       configured, you should be able to do the following:
+
+       Schedule a textdump using the "textdump set" command.
+
+       Turn on DDB output capture using "capture on", run your commands of interest, 
+       and turn it off using "capture off".
+
+       Type "call doadump" to dump memory, and "reset" to reboot.
+
+       (8) The buffer is small, can I pick and choose what DDB output is captured?
+
+       The capture buffer does have a size limit, so you might find you want to 
+       explore interactively at first to figure out what information to save. Then 
+       you can turn it on and off around output to capture with "capture on" and 
+       "capture off". Each time you turn capture back on, new output is appended 
+       after any existing output.
+
+       If you decide you want to clear the buffer, you can use "capture reset" to do 
+       that, and you can check the status of the buffer using "capture status".
+
+       You can also increase the buffer size by setting the debug.ddb.capture.bufsize 
+       sysctl to a larger size.  The sysctl will automatically round up to the next 
+       textdump blocksize.
+
+       (9) Can I continue the kernel after doing a textdump?
+
+       No. As with kernel memory dumps, textdumps invoke the storage controller 
+       dumper routine, which may hose up state in the device driver preventing its 
+       use after the dump is generated.
+
+       However, if you do plan to continue from DDB, just use DDB output capture 
+       without a textdump. You can then extract the contents of the DDB buffer using 
+       the debug.ddb.capture.data sysctl.
+       #+END_QUOTE
 
 ** Core Dumps in Mac OS X
    Mac OS X is capable of creating gzipped core dumps and dumping locally, or
    over the network using a modified =tftpd(8)= daemon they call =kdumpd(8)=. In
    addition dumps over FireWire are supported for situations where the kernel
-   panic is caused by the Ethernet driver of network code.
+   panic is caused by the Ethernet driver or network code.
 
 
    In =xnu/osfmk/kdp/kdp_core.c= Mac OS X gzips its' core dump before writing it
@@ -468,8 +768,8 @@ research for this paper and can be found in the appendix.
 
    Network dumping "has been present since Mac OS X 10.3 for PowerPC-based
    Macintosh systems, and since Mac OS X 10.4.7 for Intel-based Macintosh
-   systems."
-   From =kdumpd(8)=:
+   systems."[fn:10]
+   From =kdumpd(8)=[fn:16]:
 #+BEGIN_QUOTE
      Kdumpd is a server which receives kernel states in the form of a core
      dump from a remote Mac OS X machine.  
@@ -766,8 +1066,9 @@ research for this paper and can be found in the appendix.
     #+END_SRC
   Not yet done.
 
-** Core Dumps in Solaris
-   Solaris has several features that others don't.
+** Core Dumps in Solaris (incomplete)                              :noexport:
+   Solaris has several features that others don't. But Solaris is arguably not
+   within the scope of this paper. Detailing Illmos' abilities instead.
    - =savecore(1M)= has the ability to ``live dump'', creating a dump of a
      running system. =savecore(1M)= does note that this dump will not be
      entirely self consistent because the machine is not halted while dumping.
@@ -785,6 +1086,8 @@ research for this paper and can be found in the appendix.
         - https://docs.oracle.com/cd/E23824_01/html/821-1448/ggrln.html
       - dumpadm(1m) for -e estimation (since solaris 11.2)
         - https://docs.oracle.com/cd/E53394_01/html/E54764/dumpadm-1m.html
+** Core Dumps in Illumos (incomplete)                              :noexport:
+*** Notes                                                          :noexport:
 * The Future
   There are several extensions to the FreeBSD core dump code that exist as sets
   of patches on mailing lists and wikis but are not found in upstream FreeBSD.
@@ -853,11 +1156,14 @@ research for this paper and can be found in the appendix.
    Groupon and applies to FreeBSD 10.1 and FreeBSD 11. =minidumpsz= has not
    yet made it into upstream FreeBSD.
 
-** Modularizing Dump Code
+** Modularizing Dump Code (incomplete)
    - Backporting features and fixes added to dump code becomes trivial
    - Development becomes easier because LKMs are easier to work with
    - Embedded systems benifet from a smaller kernel
 *** Notes                                                          :noexport:
+**** Solaris dumpadm -e
+     - Solaris 11.2 has a similiar capability but is not limited to minidump, it
+       estimates based on your current config.
 **** Email from Rod Grimes
 #+BEGIN_QUOTE
 Delivered-To: sam@samgwydir.com
@@ -964,25 +1270,27 @@ from the foundation if I didnt get accepted for a paper.)
 Rod Grimes                                                 rgrimes@freebsd.org
 #+END_QUOTE
 
-** Live Dump
+** Live Dump (incomplete)
+   - Solaris has this. 
 *** Notes                                                          :noexport:
-** Dump to swap on zvol
+** Dump to swap on zvol (incomplete)
+   - Solaris has this. 
 *** Notes                                                          :noexport:
-* Conclusion
+* Conclusion (incomplete)
   Though it may seem like core dumps are a solved problem from the past, it
   turns out the core dump code is an ever changing routine that is constantly
   being adapted to the times. 
 
-** Recommendations
+** Recommendations (incomplete)
    - textdumps by defaults, but with better defaults?
    - documentation should include reccomendations on swap size for different amounts of ram
      - include amounts for fulldump, minidump and textdump at certain RAM sizes
 * Acknowledgments
 
   The author would like thank Michael Dexter for his help debugging the original
-  issues that led to our current combined knowledge of core dumps. In addition
-  Rodney W. Grimes' help reading code, from PDP-11 assembly to modern C, along
-  with his historical knowledge was invaluable.
+  issues that led to our current combined knowledge of core dumps. In addition,
+  Rodney W. Grimes' historical knowledge and help reading code from PDP-11
+  assembly to modern C was invaluable.
 
   The author thanks Deb Goodkin of the FreeBSD Foundation for her help bringing
   the author into the FreeBSD community and lastly thanks the FreeBSD community
@@ -2011,6 +2319,12 @@ Differential Revision:	https://reviews.freebsd.org/D5848
 
 
 * Footnotes
+
+[fn:16] https://opensource.apple.com/source/network_cmds/network_cmds-396.6/kdumpd.tproj/kdumpd.8.auto.html
+
+[fn:15] https://svnweb.freebsd.org/base/head/sys/amd64/amd64/minidump_machdep.c?revision=157908&view=markup
+
+[fn:14] https://www.freebsd.org/doc/en/books/developers-handbook/kerneldebug.html
 
 [fn:13] https://svnweb.freebsd.org/base?view=revision&revision=309818
 

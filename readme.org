@@ -1,0 +1,66 @@
+#+OPTIONS: ':nil *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline author:t
+#+OPTIONS: broken-links:nil c:nil creator:nil d:(not "LOGBOOK") date:t e:t
+#+OPTIONS: email:nil f:t inline:t num:t p:nil pri:nil prop:nil stat:t tags:t
+#+OPTIONS: tasks:t tex:t timestamp:t title:t toc:t todo:t |:t
+#+TITLE: The History and Future of Core Dumps in FreeBSD
+#+DATE: <2017-01-13 Fri>
+#+AUTHOR: Sam Gwydir
+#+EMAIL: sam@samgwydir.com
+#+LANGUAGE: en
+#+SELECT_TAGS: export
+#+EXCLUDE_TAGS: noexport
+#+CREATOR: Emacs 25.1.1 (Org mode 9.0.3)
+
+This paper details the history, present state and some ideas for the future of
+the core dump routines in FreeBSD. The history follows FreeBSD back through BSD
+to 5th Edition Research UNIX.
+
+This started as a talk proposal to AsiaBSD Con 2017 and BSDCan 2017 about my
+wants in FreeBSD but the research got out of hand and became a complete history
+on the topic.
+
+* Abstract
+
+Crash dumps, also known as core dumps, have been a part of BSD since it's
+beginnings in Research UNIX. A core dump is ``a copy of memory that is saved on
+secondary storage by the kernel'' for debugging a system failure[fn:1]. Though
+38 years have passed since =doadump()= came about in UNIX/32V, core dumps are
+still needed and utilized in much the same way they were then. Given this, one
+might assume the core dump code changed little over time but, with some
+research, this assumption has proven incorrect.
+
+What has changed over time is where core dumps are sent to and what processor
+architectures are supported. Previous to the advent of UNIX, core dumps were
+printed to a line printer or punch cards. At the birth of UNIX core dumps were
+made to magnetic tape and because UNIX only supported the PDP-11, it was the
+only architecture supported for dumps. Over time machine architecture support
+has evolved from different PDP-11 models to hp300, i386 up to the present day
+with AMD64 and ARM64. In addition the type of dump device has changed from tape,
+to hard disk or another machine over a LAN.
+
+The following paper begins with a quick background on what core dumps are and
+why operators might need them. Following that the current state of the core dump
+facility and some of the more common extensions in use are examined. We conclude
+with a call to action for upstreaming these extensions and modularizing the core
+dump code such that different methods of core dump can be dynamically loaded
+into the kernel on demand.
+
+In addition a complete history of core dumps in UNIX and BSD was produced as
+research for this paper and can be found in the appendix.
+
+* 'TODO' list
+** TODO Clean up notes
+** TODO Finish Textdump Procedure and Contents
+** TODO Revise the details of the minidump procedure
+** TODO Add Solaris? 
+  - Does this make sense (it's no longer BSD based)?
+  - It does have a ton of features I want in FreeBSD
+** TODO Add Illumos
+   - Could possibly replace Solaris section
+** TODO Finish Modularization of Core Dump Code section
+** TODO minidumpsz code needs publishing so I can reference it
+** TODO Finish Conclusion
+** TODO Submit Finished Paper to AsiaBSD Con 2017
+   DEADLINE: <2017-02-04 Fri>
+** TODO Submit to BSDCan
+   DEADLINE: <2017-01-19 Thu>
