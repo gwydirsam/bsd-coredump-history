@@ -1,4 +1,4 @@
-#+OPTIONS: ':t *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline author:t c:nil
+#+OPTIONS: ':t *:t -:t ::t <:t H:4 \n:nil ^:t arch:headline author:t c:nil
 #+OPTIONS: creator:nil d:(not "LOGBOOK") date:t e:t email:nil f:t inline:t
 #+OPTIONS: num:t p:nil pri:nil prop:nil stat:t tags:t tasks:t tex:t timestamp:t
 #+OPTIONS: title:t toc:nil todo:t |:t
@@ -18,6 +18,13 @@
 #+KEYWORDS:
 #+SUBTITLE:
 
+\pagebreak
+\onecolumn
+
+\tableofcontents
+
+\pagebreak
+\twocolumn
 
 #+BEGIN_COMMENT
 
@@ -178,7 +185,7 @@ tape and because UNIX supported only the PDP-11, it was the only architecture
 supported for dumps. Over time the specific dump device has changed from tape,
 to hard disk and even over the network to a remote machine. In addition, machine
 architecture support has evolved from different PDP-11 models to hp300, i386 up
-to the present day with amd64 and ARM.
+to the present day with AMD64 and ARM.
 
 The following paper begins with a quick background on what core dumps are and
 why operators might need them. Following that a complete history of core dumps
@@ -280,657 +287,263 @@ dynamically loaded into the kernel on demand.
 
   In documenting current dump code it occurred to the author and his
   colleagues that the BSD dump code is not an unchanging relic, but a living
-  breathing artifact that can be traced directly back to UNIX's birth.
-  Hopefully the information herein is of use to inform further work on core
-  dumps, failing that we hope it is interesting.
+  breathing code base that needs to be constantly adapted to the requirements of
+  the times. Because of this fact the author intends to provide a basis for the
+  argument that the core dump code should be modularized for the flexibility
+  that provides.
 
-* Background
-** Full Dump Contents
-   The canonical form of core dump is the "full dump". Full dumps are created
-   via the =doadump()= code path which starts in =sys/kern/kern_shutdown.c=. The
-   resulting dump is an ELF formatted binary written to a configured swap
-   partition. The following is based on x86 and amd64 code and is the result of
-   =dumpsys_generic()=. This will be similar in format but different values for
-   different architectures.
+  In addition it is hoped that the information herein is of use to inform
+  further work on core dumps, failing that we hope it is interesting.
 
-   #+CAPTION: Full Dump Format
-   #+NAME:   tab:dumpformat
-   #+ATTR_LATEX: :float nil :placement {p}
-   |---+-----------------+-----------------------------|
-   |   | Field           | Description                 |
-   |---+-----------------+-----------------------------|
-   | / | >              | <                          |
-   |   | Leader          | See Table [[tab:kdhheader]] |
-   |   | ELF Header      | See Table [[tab:elfheader]] |
-   |   | Program Headers |                             |
-   |   | Memory Chunks   |                             |
-   |   | Trailer         | See Table [[tab:kdhheader]] |
-   |---+-----------------+-----------------------------|
+* The Present
+** Core Dumps in UNIX                                              :noexport:
+** Core Dumps in FreeBSD
+*** Full Dump Contents
+    The canonical form of core dump is the "full dump". Full dumps are created
+    via the =doadump()= code path which starts in =sys/kern/kern_shutdown.c=. The
+    resulting dump is an ELF formatted binary written to a configured swap
+    partition. The following is based on amd64 code and is the result of
+    =dumpsys_generic()=. This will be similar in format but different values for
+    different architectures.
 
-   #+CAPTION: =kerneldumpheader= Format
-   #+NAME:   tab:kdhheader
-   #+ATTR_LATEX: :float nil :placement {p}
-   |---+---------------------+----------------------------|
-   |   | Field               | Value                      |
-   |---+---------------------+----------------------------|
-   | / | >                   | <                          |
-   |   | magic               | "FreeBSD Kernel Dump"      |
-   |   | architecture        | "amd64"                    |
-   |   | version             | 1 (kdh format version)     |
-   |   | architectureversion | 2                          |
-   |   | dumplength          | varies, excluding headers |
-   |   | dumptime            | current time              |
-   |   | blocksize           | block size                |
-   |   | hostname            | hostname                  |
-   |   | versionstring       | version of OS             |
-   |   | panicstring         | message given to =panic(9)= |
-   |   | parity              | parity bits               |
-   |---+---------------------+----------------------------|
-   # |---+---------------------|-----------------------------------|
-   # |   | Field               | Value                             |
-   # |---+---------------------|-----------------------------------|
-   # | / | <>                  |                                   |
-   # |   | magic               | "FreeBSD Kernel Dump"             |
-   # |   | architecture        | "amd64"                           |
-   # |   | version             | 1 (version of kernel dump format) |
-   # |   | architectureversion | 2                                 |
-   # |   | dumplength          | (varies, excluding headers)        |
-   # |   | dumptime            | (current time)                     |
-   # |   | blocksize           | (block size)                       |
-   # |   | hostname            | (hostname)                         |
-   # |   | versionstring       |                                   |
-   # |   | panicstring         |                                   |
-   # |   | parity              | (parity bits)                      |
-   # |---+---------------------|-----------------------------------|
-   # |---+---------------------|
-   # |   | Field               |
-   # |---+---------------------|
-   # | / | <>                  |
-   # |   | magic               |
-   # |   | architecture        |
-   # |   | version             |
-   # |   | architectureversion |
-   # |   | dumplength          |
-   # |   | dumptime            |
-   # |   | blocksize           |
-   # |   | hostname            |
-   # |   | versionstring       |
-   # |   | panicstring         |
-   # |   | parity              |
-   # |---+---------------------|
+    #+CAPTION: Full Dump Format
+    #+NAME:   tab:dumpformat
+    #+ATTR_LATEX: :float nil :placement {p}
+    |---+-----------------+-----------------------------|
+    |   | Field           | Description                 |
+    |---+-----------------+-----------------------------|
+    | / | >              | <                          |
+    |   | Leader          | See Table [[tab:kdhheader]] |
+    |   | ELF Header      | See Table [[tab:elfheader]] |
+    |   | Program Headers |                             |
+    |   | Memory Chunks   |                             |
+    |   | Trailer         | See Table [[tab:kdhheader]] |
+    |---+-----------------+-----------------------------|
 
-   #+CAPTION: ELF Header Format
-   #+NAME:   tab:elfheader
-   #+ATTR_LATEX: :float nil
-|---+----------------------------+------------------------|
-|   | Field                      | Value                  |
-|---+----------------------------+------------------------|
-| / | >                          | <                      |
-|   | =ehdr.e_ident[EI_MAG0]=    | =0x7f=                 |
-|   | =ehdr.e_ident[EI_MAG1]=    | `E'                    |
-|   | =ehdr.e_ident[EI_MAG2]=    | `L'                    |
-|   | =ehdr.e_ident[EI_MAG3]=    | `F'                    |
-|   | =ehdr.e_ident[EI_CLASS]=   | 2 (64-bit)             |
-|   | =ehdr.e_ident[EI_DATA]=    | 1 (little endian)      |
-|   | =ehdr.e_ident[EI_VERSION]= | 1 (ELF version 1)      |
-|   | =ehdr.e_ident[EI_OSABI]=   | 255                    |
-|   | =ehdr.e_type=              | 4 (core)               |
-|   | =ehdr.e_machine=           | 62 (x86-64)            |
-|   | =ehdr.e_phoff=             | size of this header    |
-|   | =ehdr.e_flags=             | =0=                    |
-|   | =ehdr.e_ehsize=            | size of this header    |
-|   | =ehdr.e_phentsize=         | size of program header |
-|   | =ehdr.e_shentsize=         | size of section header |
-|---+----------------------------+------------------------|
-# TODO e_phoff may not be right
-# |---+----------------------------+-----------------------------------------------|
-# |   | Field                      | Value                                         |
-# |---+----------------------------+-----------------------------------------------|
-# | / | <>                         | <>                                            |
-# |   | =ehdr.e_ident[EI_MAG0]=    | =ELFMAG0= = =0x7f=                            |
-# |   | =ehdr.e_ident[EI_MAG1]=    | =ELFMAG1= = 'E'                               |
-# |   | =ehdr.e_ident[EI_MAG2]=    | =ELFMAG2= = 'L'                               |
-# |   | =ehdr.e_ident[EI_MAG3]=    | =ELFMAG3= = 'F'                               |
-# |   | =ehdr.e_ident[EI_CLASS]=   | =ELF_CLASS= = 2 (64-bit)                      |
-# |   | =ehdr.e_ident[EI_DATA]=    | =ELFDATA2LSB= = 1 (little endian)             |
-# |   | =ehdr.e_ident[EI_VERSION]= | =EV_CURRENT= = 1 (ELF version 1)              |
-# |   | =ehdr.e_ident[EI_OSABI]=   | =ELFOSABI_STANDALONE= = 255                   |
-# |   | =ehdr.e_type=              | =ET_CORE= = 4 (core)                          |
-# |   | =ehdr.e_machine=           | =EM_VALUE= = 62 (x86-64)                      |
-# |   | =ehdr.e_phoff=             | =sizeof(ehdr)= = (size of this header)        |
-# |   | =ehdr.e_flags=             | =0=                                           |
-# |   | =ehdr.e_ehsize=            | =sizeof(ehdr)= = (size of this header)        |
-# |   | =ehdr.e_phentsize=         | =sizeof(Elf_Phdr)= = (size of program header) |
-# |   | =ehdr.e_shentsize=         | =sizeof(Elf_Shdr)= = (size of section header) |
-# |---+----------------------------+-----------------------------------------------|
+    #+CAPTION: =kerneldumpheader= Format
+    #+NAME:   tab:kdhheader
+    #+ATTR_LATEX: :float nil :placement {p}
+    |---+---------------------+----------------------------|
+    |   | Field               | Value                      |
+    |---+---------------------+----------------------------|
+    | / | >                   | <                          |
+    |   | magic               | "FreeBSD Kernel Dump"      |
+    |   | architecture        | "amd64"                    |
+    |   | version             | 1 (kdh format version)     |
+    |   | architectureversion | 2                          |
+    |   | dumplength          | varies, excluding headers |
+    |   | dumptime            | current time              |
+    |   | blocksize           | block size                |
+    |   | hostname            | hostname                  |
+    |   | versionstring       | version of OS             |
+    |   | panicstring         | message given to =panic(9)= |
+    |   | parity              | parity bits               |
+    |---+---------------------+----------------------------|
+    # |---+---------------------|-----------------------------------|
+    # |   | Field               | Value                             |
+    # |---+---------------------|-----------------------------------|
+    # | / | <>                  |                                   |
+    # |   | magic               | "FreeBSD Kernel Dump"             |
+    # |   | architecture        | "amd64"                           |
+    # |   | version             | 1 (version of kernel dump format) |
+    # |   | architectureversion | 2                                 |
+    # |   | dumplength          | (varies, excluding headers)        |
+    # |   | dumptime            | (current time)                     |
+    # |   | blocksize           | (block size)                       |
+    # |   | hostname            | (hostname)                         |
+    # |   | versionstring       |                                   |
+    # |   | panicstring         |                                   |
+    # |   | parity              | (parity bits)                      |
+    # |---+---------------------|-----------------------------------|
+    # |---+---------------------|
+    # |   | Field               |
+    # |---+---------------------|
+    # | / | <>                  |
+    # |   | magic               |
+    # |   | architecture        |
+    # |   | version             |
+    # |   | architectureversion |
+    # |   | dumplength          |
+    # |   | dumptime            |
+    # |   | blocksize           |
+    # |   | hostname            |
+    # |   | versionstring       |
+    # |   | panicstring         |
+    # |   | parity              |
+    # |---+---------------------|
+
+    #+CAPTION: ELF Header Format
+    #+NAME:   tab:elfheader
+    #+ATTR_LATEX: :float nil
+ |---+----------------------------+------------------------|
+ |   | Field                      | Value                  |
+ |---+----------------------------+------------------------|
+ | / | >                          | <                      |
+ |   | =ehdr.e_ident[EI_MAG0]=    | =0x7f=                 |
+ |   | =ehdr.e_ident[EI_MAG1]=    | `E'                    |
+ |   | =ehdr.e_ident[EI_MAG2]=    | `L'                    |
+ |   | =ehdr.e_ident[EI_MAG3]=    | `F'                    |
+ |   | =ehdr.e_ident[EI_CLASS]=   | 2 (64-bit)             |
+ |   | =ehdr.e_ident[EI_DATA]=    | 1 (little endian)      |
+ |   | =ehdr.e_ident[EI_VERSION]= | 1 (ELF version 1)      |
+ |   | =ehdr.e_ident[EI_OSABI]=   | 255                    |
+ |   | =ehdr.e_type=              | 4 (core)               |
+ |   | =ehdr.e_machine=           | 62 (x86-64)            |
+ |   | =ehdr.e_phoff=             | size of this header    |
+ |   | =ehdr.e_flags=             | =0=                    |
+ |   | =ehdr.e_ehsize=            | size of this header    |
+ |   | =ehdr.e_phentsize=         | size of program header |
+ |   | =ehdr.e_shentsize=         | size of section header |
+ |---+----------------------------+------------------------|
+ # TODO e_phoff may not be right
+ # |---+----------------------------+-----------------------------------------------|
+ # |   | Field                      | Value                                         |
+ # |---+----------------------------+-----------------------------------------------|
+ # | / | <>                         | <>                                            |
+ # |   | =ehdr.e_ident[EI_MAG0]=    | =ELFMAG0= = =0x7f=                            |
+ # |   | =ehdr.e_ident[EI_MAG1]=    | =ELFMAG1= = 'E'                               |
+ # |   | =ehdr.e_ident[EI_MAG2]=    | =ELFMAG2= = 'L'                               |
+ # |   | =ehdr.e_ident[EI_MAG3]=    | =ELFMAG3= = 'F'                               |
+ # |   | =ehdr.e_ident[EI_CLASS]=   | =ELF_CLASS= = 2 (64-bit)                      |
+ # |   | =ehdr.e_ident[EI_DATA]=    | =ELFDATA2LSB= = 1 (little endian)             |
+ # |   | =ehdr.e_ident[EI_VERSION]= | =EV_CURRENT= = 1 (ELF version 1)              |
+ # |   | =ehdr.e_ident[EI_OSABI]=   | =ELFOSABI_STANDALONE= = 255                   |
+ # |   | =ehdr.e_type=              | =ET_CORE= = 4 (core)                          |
+ # |   | =ehdr.e_machine=           | =EM_VALUE= = 62 (x86-64)                      |
+ # |   | =ehdr.e_phoff=             | =sizeof(ehdr)= = (size of this header)        |
+ # |   | =ehdr.e_flags=             | =0=                                           |
+ # |   | =ehdr.e_ehsize=            | =sizeof(ehdr)= = (size of this header)        |
+ # |   | =ehdr.e_phentsize=         | =sizeof(Elf_Phdr)= = (size of program header) |
+ # |   | =ehdr.e_shentsize=         | =sizeof(Elf_Shdr)= = (size of section header) |
+ # |---+----------------------------+-----------------------------------------------|
 
 
-*** Notes                                                        :noexport:
-  # - Canonical BSD Unix core memory dumping: All memory to a
-  #      pre-designated device
-  #   - 64kb indent, starts dumping at END of dump dev in case you
-  #        start swapping early in boot before you retrieve the dump.
-  #        4.2BSD?
-  #   - kern/kern\_shutdown.c (Traditional)
+**** Notes                                                         :noexport:
+   # - Canonical BSD Unix core memory dumping: All memory to a
+   #      pre-designated device
+   #   - 64kb indent, starts dumping at END of dump dev in case you
+   #        start swapping early in boot before you retrieve the dump.
+   #        4.2BSD?
+   #   - kern/kern\_shutdown.c (Traditional)
 
-  #   - Backtrace.io paper here
-  # https://backtrace.io/blog/improving-freebsd-kernel-debugging/
-  # https://en.wikipedia.org/wiki/Core_dump
-** minidump contents                                               :noexport:
-** =textdump= contents                                             :noexport:
-*** Notes                                                        :noexport:
-    https://lists.freebsd.org/pipermail/freebsd-current/2007-December/081626.html
+   #   - Backtrace.io paper here
+   # https://backtrace.io/blog/improving-freebsd-kernel-debugging/
+   # https://en.wikipedia.org/wiki/Core_dump
+*** Minidump Contents
+*** Textdump Contents
 
-** Modern Full Core Dump Procedure
+*** Modern Full Core Dump Procedure
 
-  When a UNIX-like system such as FreeBSD encounters an unrecoverable and
-  unexpected error the kernel will "panic". Though the word panic has connotations
-  of irrationality, the function =panic(9)= maintains composure while it
-  "[terminates] the running system" and attempts to save a core dump to a
-  configured dump device. 
+   When a UNIX-like system such as FreeBSD encounters an unrecoverable and
+   unexpected error the kernel will "panic". Though the word panic has connotations
+   of irrationality, the function =panic(9)= maintains composure while it
+   "[terminates] the running system" and attempts to save a core dump to a
+   configured dump device. 
 
-# this references D&I
+ # this references D&I
  
-  What follows is a thorough description of the FreeBSD core dump routine starting
-  with =doadump()= in =sys/kern/kern_shutdown.c=. 
+   What follows is a thorough description of the FreeBSD core dump routine starting
+   with =doadump()= in =sys/kern/kern_shutdown.c=. 
 
-  =doadump()= is called by =kern_reboot()=, which shuts down "the system cleanly to
-  prepare for reboot, halt, or power off." [4] =kern_reboot()= calls
-  =doadump()= if the =RB_DUMP= flag is set and the system is not "cold" or already
-  creating a core dump. =doadump()= takes a boolean informing it to whether or not
-  to take a "text dump", a form of dump carried out if the online kernel debugger,
-  =DDB=, is built into the running kernel. =doaddump()= returns an error code if
-  the system is currently creating a dump, the dumper is NULL and returns error
-  codes on behalf of =dumpsys()=.
+   =doadump()= is called by =kern_reboot()=, which shuts down "the system cleanly to
+   prepare for reboot, halt, or power off." [4] =kern_reboot()= calls
+   =doadump()= if the =RB_DUMP= flag is set and the system is not "cold" or already
+   creating a core dump. =doadump()= takes a boolean informing it to whether or not
+   to take a "text dump", a form of dump carried out if the online kernel debugger,
+   =DDB=, is built into the running kernel. =doaddump()= returns an error code if
+   the system is currently creating a dump, the dumper is NULL and returns error
+   codes on behalf of =dumpsys()=.
 
-  =doadump(boolean_t textdump)= starts the core dump procedure by saving the
-  current context with a call to =savectx()=. At this point if they are
-  configured, a "text dump" can be carried out. Otherwise a core dump is invoked
-  using =dumpsys()=, passing it a =struct dumper=. =dumpsys()= is defined on a
-  per-architecture basis. This allows different architectures to setup their
-  dump structure differently. =dumpsys()= calls =dumpsys_generic()= passing
-  along the =struct dumperinfo= it was called with. =dumpsys_generic()= is
-  defined in =sys/kern/kern_dump.c= and is the meat of the core dump procedure.
+   =doadump(boolean_t textdump)= starts the core dump procedure by saving the
+   current context with a call to =savectx()=. At this point if they are
+   configured, a "text dump" can be carried out. Otherwise a core dump is invoked
+   using =dumpsys()=, passing it a =struct dumper=. =dumpsys()= is defined on a
+   per-architecture basis. This allows different architectures to setup their
+   dump structure differently. =dumpsys()= calls =dumpsys_generic()= passing
+   along the =struct dumperinfo= it was called with. =dumpsys_generic()= is
+   defined in =sys/kern/kern_dump.c= and is the meat of the core dump procedure.
 
-  There are several main steps to the =dumpsys_generic()= procedure. The main
-  steps are as follows. At any point if there is an error condition, goto
-  failure cleanup at the end of the procedure.
+   There are several main steps to the =dumpsys_generic()= procedure. The main
+   steps are as follows. At any point if there is an error condition, goto
+   failure cleanup at the end of the procedure.
 
-  1. Fill in the ELF header.
-  2. Calculate the dump size.
-  3. Determine if the dump device is large enough.
-  4. Begin Dump
-     1. Leader (Padding)
-     2. ELF Header
-     3. Program Headers
-     4. Memory Chunks
-     5. Trailer
-  5. End Dump
+   1. Fill in the ELF header.
+   2. Calculate the dump size.
+   3. Determine if the dump device is large enough.
+   4. Begin Dump
+      1. Leader (Padding)
+      2. ELF Header
+      3. Program Headers
+      4. Memory Chunks
+      5. Trailer
+   5. End Dump
 
-     # this NULL byte claim needs verifcation
-     After this is done the kernel writes out a NULL byte to "Signal completion,
-     signoff and exit stage left." And our core dump is complete.
+      # this NULL byte claim needs verifcation
+      After this is done the kernel writes out a NULL byte to "Signal completion,
+      signoff and exit stage left." And our core dump is complete.
 
-** BSD Core Dump Extensions                                        :noexport:
-  Not yet done. This section details the features in these extensions.
 
-*** =netdump= - Network Dump
-*** Compressed Dump
-*** Encrypted Dump
-     # - Encryption - landed in head 12/10/2016 (Verify)
-*** =minidumpsz= - Minidump Size Estimation
+*** FreeBSD Core Dump Extensions
 
-* History
+**** =netdump= - Network Dump
+   Crash dumping over the network can be especially useful in embedded systems
+   that do not have adequately sized swap partitions. 
 
-The following sections list when different features of the core dump code were
-introduced starting with the core dump code itself. First the dump facility will
-be followed through the different versions of Research UNIX and then BSD through
-to present versions of FreeBSD. A quick explanation of the state of Mac OS X's
-dump features will follow. Afterward the various core dump extensions' history
-will be explored.
+   The original netdump code was written by Darrell Anderson at Duke around 2000
+   in the FreeBSD 4.x era as a kernel module. This code was later ported to
+   modern FreeBSD in 2010 at Sandvine with the intention of being part of
+   FreeBSD 9.0, which did not succeed. 
 
-** Core Dumps in UNIX
+   Currently there exists working netdump code at Isilon that applies cleanly to
+   versions of FreeBSD after 11 but before encrypted dump was added in FreeBSD
+   12-CURRENT. Network dumps have not yet made it into upstream FreeBSD.
+   
 
-Core dumping was initially a manual process. As documented in Version 6 AT&T
-UNIX's =crash(8)=, an operator could take a core dump ``if [they felt] up to
-debugging''. Though 6th Edition is not the first appearance of dump code in
-UNIX, it is the first complete repository of code the public has access to.
-
-*** 5th Edition UNIX                                               :noexport:
-    5th Edition UNIX's dump code can be found in =usr/sys/conf/mch.s=.
-
-**** =/usr/sys/conf/mch.s=                                         :noexport:
-# https://github.com/dspinellis/unix-history-repo/blob/Research-V5-Snapshot-Development/usr/sys/conf/mch.s#L826
-
-    #+BEGIN_SRC asm
-.globl	dump
-dump:
-	mov	$4,r0	/ overwrites trap vectors
-	mov	r1,(r0)+
-	mov	r2,(r0)+
-	mov	r3,(r0)+
-	mov	r4,(r0)+
-	mov	r5,(r0)+
-	mov	sp,(r0)+
-	mov	$KISA0,r1
-	mov	$8.,r2
-1:
-	mov	(r1)+,(r0)+
-	sob	r2,1b
-	mov	$MTC,r0
-	mov	$60004,(r0)+
-	clr	2(r0)
-1:
-	mov	$-512.,(r0)
-	inc	-(r0)
-2:
-	tstb	(r0)
-	bge	2b
-	tst	(r0)+
-	bge	1b
-	5
-	mov	$60007,-(r0)
-	br	.
-    #+END_SRC
-*** 6th Edition UNIX
- In 6th Edition UNIX =crash(8)= teaches us how to manually take a core dump:
-
-#+BEGIN_QUOTE
-If the reason for the crash is not evident
-(see below for guidance on `evident')
-you may want to try to dump the system if you feel up to
-debugging.
-At the moment a dump can be taken only on magtape.
-With a tape mounted and ready,
-stop the machine, load address 44, and start.
-This should write a copy of all of core
-on the tape with an EOF mark.
-#+END_QUOTE
-
-     =/usr/sys/conf/m40.s= and =/usr/sys/conf/m45.s= give UNIX support for the
-     PDP-11/40 and PDP-11-45.
-**** =/usr/sys/conf/m40.s=                                         :noexport:
-    # https://github.com/dspinellis/unix-history-repo/blob/Research-V6-Snapshot-Development/usr/sys/conf/m40.s
-    #+BEGIN_SRC asm
-    .globl	dump
-    dump:
-    	bit	$1,SSR0
-    	bne	dump
-    
-    / save regs r0,r1,r2,r3,r4,r5,r6,KIA6
-    / starting at abs location 4
-    
-    	mov	r0,4
-    	mov	$6,r0
-    	mov	r1,(r0)+
-    	mov	r2,(r0)+
-    	mov	r3,(r0)+
-    	mov	r4,(r0)+
-    	mov	r5,(r0)+
-    	mov	sp,(r0)+
-    	mov	KISA6,(r0)+
-    
-    / dump all of core (ie to first mt error)
-    / onto mag tape. (9 track or 7 track 'binary')
-    
-    	mov	$MTC,r0
-    	mov	$60004,(r0)+
-    	clr	2(r0)
-    1:
-    	mov	$-512.,(r0)
-    	inc	-(r0)
-    2:
-    	tstb	(r0)
-    	bge	2b
-    	tst	(r0)+
-    	bge	1b
-    	reset
-    
-    / end of file and loop
-    
-    	mov	$60007,-(r0)
-    	br	.
-    #+END_SRC
-
-**** =/usr/sys/conf/m45.s=                                         :noexport:
-=/usr/sys/conf/m45.s=
-# https://github.com/dspinellis/unix-history-repo/blob/Research-V6-Snapshot-Development/usr/sys/conf/m45.s#L21
-#+BEGIN_SRC asm
-/ Mag tape dump
-/ save registers in low core and
-/ write all core onto mag tape.
-/ entry is thru 44 abs
-
-.data
-.globl	dump
-dump:
-	bit	$1,SSR0
-	bne	dump
-
-/ save regs r0,r1,r2,r3,r4,r5,r6,KIA6
-/ starting at abs location 4
-
-	mov	r0,4
-	mov	$6,r0
-	mov	r1,(r0)+
-	mov	r2,(r0)+
-	mov	r3,(r0)+
-	mov	r4,(r0)+
-	mov	r5,(r0)+
-	mov	sp,(r0)+
-	mov	KDSA6,(r0)+
-
-/ dump all of core (ie to first mt error)
-/ onto mag tape. (9 track or 7 track 'binary')
-
-	mov	$MTC,r0
-	mov	$60004,(r0)+
-	clr	2(r0)
-1:
-	mov	$-512.,(r0)
-	inc	-(r0)
-2:
-	tstb	(r0)
-	bge	2b
-	tst	(r0)+
-	bge	1b
-	reset
-
-/ end of file and loop
-
-	mov	$60007,-(r0)
-	br	.
-#+END_SRC
-*** 7th Edition UNIX
-**** =/usr/sys/conf/mch.s=                                         :noexport:
-# https://github.com/dspinellis/unix-history-repo/blob/Research-V7-Snapshot-Development/usr/sys/conf/mch.s#L26
-=/usr/sys/conf/mch.s=
-#+BEGIN_SRC asm
-/ Mag tape dump
-/ save registers in low core and
-/ write all core onto mag tape.
-/ entry is thru 44 abs
-
-.data
-.globl	dump
-dump:
-
-/ save regs r0,r1,r2,r3,r4,r5,r6,KIA6
-/ starting at abs location 4
-
-	mov	r0,4
-	mov	$6,r0
-	mov	r1,(r0)+
-	mov	r2,(r0)+
-	mov	r3,(r0)+
-	mov	r4,(r0)+
-	mov	r5,(r0)+
-	mov	sp,(r0)+
-	mov	KDSA6,(r0)+
-
-/ dump all of core (ie to first mt error)
-/ onto mag tape. (9 track or 7 track 'binary')
-
-.if HTDUMP
-	mov	$HTCS1,r0
-	mov	$40,*$HTCS2
-	mov	$2300,*$HTTC
-	clr	*$HTBA
-	mov	$1,(r0)
-1:
-	mov	$-512.,*$HTFC
-	mov	$-256.,*$HTWC
-	movb	$61,(r0)
-2:
-	tstb	(r0)
-	bge	2b
-	bit	$1,(r0)
-	bne	2b
-	bit	$40000,(r0)
-	beq	1b
-	mov	$27,(r0)
-.endif
-HT	= 0172440
-HTCS1	= HT+0
-HTWC	= HT+2
-HTBA	= HT+4
-HTFC	= HT+6
-HTCS2	= HT+10
-HTTC	= HT+32
-
-MTC = 172522
-.if TUDUMP
-	mov	$MTC,r0
-	mov	$60004,(r0)+
-	clr	2(r0)
-1:
-	mov	$-512.,(r0)
-	inc	-(r0)
-2:
-	tstb	(r0)
-	bge	2b
-	tst	(r0)+
-	bge	1b
-	reset
-
-/ end of file and loop
-
-	mov	$60007,-(r0)
-.endif
-	br	.
-#+END_SRC
-
-*** Bell 32/V
-    Bell 32/V was an early port of UNIX to the DEC VAX architecture making use
-    of the C programming language to decouple the code from the PDP-11.
-    =/usr/src/sys/sys/locore.s= contains the first appearance of =doadump()= the
-    same function name used today written in VAX assembly.
-**** =/usr/src/sys/sys/locore.s=                                   :noexport:
-# https://en.wikipedia.org/wiki/UNIX/32V
-# https://github.com/dspinellis/unix-history-repo/blob/Bell-32V-Snapshot-Development/usr/src/sys/sys/locore.s#L158
-=/usr/src/sys/sys/locore.s=
-#+BEGIN_SRC asm
-#  0x200
-# Produce a core image dump on mag tape
-	.globl	doadump
-doadump:
-	movl	sp,dumpstack	# save stack pointer
-	movab	dumpstack,sp	# reinit stack
-	mfpr	$PCBB,-(sp)	# save u-area pointer
-	mfpr	$MAPEN,-(sp)	# save value
-	mfpr	$IPL,-(sp)	# ...
-	mtpr	$0,$MAPEN		# turn off memory mapping
-	mtpr	$HIGH,$IPL		# disable interrupts
-	pushr	$0x3fff			# save regs 0 - 13
-	calls	$0,_dump	# produce dump
-	halt
-
-	.data
-	.align	2
-	.globl	dumpstack
-	.space	58*4		# seperate stack for tape dumps
-dumpstack: 
-	.space	4
-	.text
-#+END_SRC
-
-** Core Dumps in BSD
-
-# probably just brought into source control with his name
-# =doadump= was added to 3BSD in 1980 by
-# Ozalp Babaoglu and was written in 33 lines of PDP-11 assembly.
-
-# TODO Talk here about added architectures? Pretty much everything is the same
-# from here on out just added architectures
-*** 1BSD & 2BSD
-    1BSD and 2BSD inherited their dump code directly from 6th Edition UNIX and
-    therefore written for the PDP-11 supporting the PDP-11/40 and PDP-11/45.
-*** 3BSD
-    3BSD imports its' dump code from Bell 32/V maintaining the name =doadump=.
-    Because of it's pedigree, =doadump= is written for in VAX assembly.
-
-    =usr/src/sys/sys/TODO= notes that "large core dumps are awful and even
-    uninterruptible!".
-
-    # https://github.com/dspinellis/unix-history-repo/blob/BSD-3-Snapshot-Development/usr/src/sys/sys/locore.s#L174
-    # https://github.com/dspinellis/unix-history-repo/blob/BSD-3-Snapshot-Development/usr/src/sys/sys/TODO
-**** =/usr/src/sys/sys/locore.s=                                   :noexport:
-    =doadump=
-    #+BEGIN_SRC asm
-# =====================================
-# Produce a core image dump on mag tape
-# =====================================
-	.globl	doadump
-doadump:
-	movl	sp,dumpstack		# save stack pointer
-	movab	dumpstack,sp		# reinit stack
-	mfpr	$PCBB,-(sp)		# save u-area pointer
-	mfpr	$MAPEN,-(sp)		# save value
-	mfpr	$IPL,-(sp)		# ...
-	mtpr	$0,$MAPEN		# turn off memory mapping
-	mtpr	$HIGH,$IPL		# disable interrupts
-	pushr	$0x3fff			# save regs 0 - 13
-	calls	$0,_dump		# produce dump
-	halt
-
-	.data
-	.align	2
-	.globl	dumpstack
-	.space	58*4			# separate stack for tape dumps
-dumpstack: 
-	.space	4
-	.text
-    #+END_SRC
-*** 4BSD
-    4BSD introduces a new feature to =doadump=, printing tracing information
-    with =dumptrc=. In addition =usr/src/sys/sys/TODO= is the first mention of
-    adding a dump to swap feature listing a "todo": "Support automatic dumps to paging area".
-    before 
-    # https://github.com/dspinellis/unix-history-repo/blob/BSD-4-Snapshot-Development/usr/src/sys/sys/locore.s#L174
-    # - add trace information with _dumptrc
-    # https://github.com/dspinellis/unix-history-repo/blob/BSD-4-Snapshot-Development/usr/src/sys/sys/TODO#L28
-    # - First talk of dump to swap in =/usr/src/sys/sys/TODO=
-*** 4.1BSD
-
-    Beginning in 4.1BSD (actually showing up in 4.1c2BSD) =doadump= is relegated
-    to setting up the machine for =dumpsys()= which is written in C and found in
-    =sys/vax/vax/machdep.c=. =doadump= now fulfills the "todo" listed in 4BSD and
-    dumps to the "paging area", or swap. =savecore(8)= is introduced to extract
-    the core from the swap partition and place it in the filesystem.
-
-    # https://github.com/dspinellis/unix-history-repo/blob/BSD-4_1c_2-Snapshot-Development/a/sys/vax/Locore.c#L36
-*** 4.1BSD                                                         :noexport:
-    # https://github.com/dspinellis/unix-history-repo/blob/BSD-4_1_snap-Snapshot-Development/sys/sys/Locore.c#L32
-    # - Back to asm? Actually I might be wrong, it might be a C/asm hybrid right now
-    # https://github.com/dspinellis/unix-history-repo/blob/BSD-4_1_snap-Snapshot-Development/sys/GENERIC/locore.c#L112
-*** 4.2BSD
-    # https://github.com/dspinellis/unix-history-repo/blob/BSD-4_1_snap-Snapshot-Development/sys/sys/Locore.c#L32
-*** 4.3BSD
-    Initial support is added for the ``tahoe'' processor.
-*** 4.3 BSD-Tahoe
-    Tahoe support is now mature and 
-    =sys/tahoe/tahoe/machdep.c= and =doadump= is ported to the tahoe.
-    =savecore= is re-written in ANSI C.
-#http://gunkies.org/wiki/4.3_BSD_Tahoe
-#     The primary purpose of this release is to provide  sup- 
-# port  for  the ``tahoe'' processor, the CPU used by Computer 
-# Consoles, Inc. (CCI Power 6/32, 6/32SX), and high end  lines 
-# of Harris (HCX-7 and HCX-9), Unisys (7000/40), and ICL (Clan 
-# 7).  Support for this processor is derived from  the  4.2BSD 
-# system  done by CCI.  Support for new DEC equipment has also 
-# been added, including support for the 8250 BI-based CPU  and 
-# the KDB-50 BI disk controller from Chris Torek, and the QVSS 
-# and QDSS display drivers for the MicroVAX II, contributed by 
-# Digital Equipment Corporation.  We expect to provide support 
-# for  both  the  VAX  and  the  tahoe  processors  in  future 
-# releases. 
-*** 4.3 BSD Net/1
-    same as 4.3-Tahoe
-*** 4.3 BSD-Reno
-    =usr/src/sys/hp300/locore.s= and =usr/src/sys/i386/locore.s= introduce hp300
-    and i386 support respectively. 
-# hp300 support came from Utah
-*** 4.3 BSD Net/2
-    same as reno
-*** 4.4
-    Tahoe no longer compiles and therefore cannot dump.
-    i386 does not compile. VAX does not compile.
-    sparc is added
-    Not yet done.
-    =usr/src/sys/luna68k/luna68k/locore.s= introduces OMRON m68030 support
-    including dump support.
-    # in 1992 -- I'm born finally!
-*** 4.4-BSD Lite1
-    
-    same as 4.4 -- changes made due to USL lawsuit.
-*** 4.4-BSD Lite2
-    -
-*** BSD SCCS
-    -
-*** 386BSD-0.0
-    i386 support, hp300 support
-*** 386BSD-0.1
-    i386 support, hp300 support
-*** 386BSD-0.1-patchkit
-    i386 support, hp300 support
-*** FreeBSD 1.0, 1.1, 1.1.5
-    i386 support, hp300 support from 386BSD-0.1-patchkit
-*** FreeBSD 2.0 2.0.5, 2.1.0, 2.1.5, 2.1.6, 2.1.6.1, 2.1.7, 2.2.0, 2.2.1, 2.2.2, 2.2.5, 2.2.6, 2.2.7, 2.2.8
-    Pulls in 4.4BSD-Lite1 code for hp300, luna68k, news3400, pmax, sparc, tahoe and vax
-**** Notes                                                         :noexport:
-#+BEGIN_QUOTE
-  /ssh:freebsd-current:/root/src/unix-history-repo/:
-  find . \( -type f -exec grep -q -e dumpsys \{\} \; \) -ls
-  1945687      144 -rw-r--r--    1 root                             wheel                               72708 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/hp300/hp300/locore.s
-  1945688       80 -rw-r--r--    1 root                             wheel                               40785 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/hp300/hp300/machdep.c
-  1785250     1728 -rw-r--r--    1 root                             wheel                              836045 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/hp300/tags
-  973678       64 -rw-r--r--    1 root                             wheel                               30221 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/i386/i386/machdep.c
-  973686     1536 -rw-r--r--    1 root                             wheel                              746387 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/i386/tags
-  2506530      128 -rw-r--r--    1 root                             wheel                               63107 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/luna68k/luna68k/locore.s
-  2506531       64 -rw-r--r--    1 root                             wheel                               30470 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/luna68k/luna68k/machdep.c
-  2506880       48 -rw-r--r--    1 root                             wheel                               23756 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/news3400/news3400/machdep.c
-  2506902     1856 -rw-r--r--    1 root                             wheel                              891210 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/news3400/tags
-  2271373       56 -rw-r--r--    1 root                             wheel                               28486 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/pmax/dev/rz.c
-  2506949      112 -rw-r--r--    1 root                             wheel                               53461 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/pmax/pmax/machdep.c
-  2188752     1792 -rw-r--r--    1 root                             wheel                              862201 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/pmax/tags
-  2507078       48 -rw-r--r--    1 root                             wheel                               22534 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/sparc/sparc/machdep.c
-  1130530     1664 -rw-r--r--    1 root                             wheel                              804425 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/sparc/tags
-  1860931     1600 -rw-r--r--    1 root                             wheel                              773455 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/tahoe/tags
-  1945710     2240 -rw-r--r--    1 root                             wheel                             1096432 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/vax/tags
-  2574311       80 -rw-r--r--    1 root                             wheel                               38769 Dec 23 02:00 .ref-FreeBSD-release/1.1.5/sys/i386/i386/machdep.c
-  1703024       88 -rw-r--r--    1 root                             wheel                               44085 Dec 23 02:00 sys/i386/i386/machdep.c
-#+END_QUOTE
-
-*** FreeBSD 3.0.0, 3.1.0, 3.2.0, 3.3.0, 3.4.0, 3.5.0
-**** Notes                                                         :noexport:
-    
-*** FreeBSD 4.0.0 4.1.0, 4.1.1, 4.2.0, 4.3.0, 4.4.0, 4.5.0, 4.6.0, 4.6.1, 4.6.2, 4.7.0, 4.8.0, 4.9.0, 4.10.0, 4.11.0
-*** FreeBSD 5.0.0 5.1.0, 5.2.0, 5.2.1, 5.3.0, 5.4.0, 5.5.0
-*** FreeBSD 6.0.0, 6.1.0, 6.2.0, 6.3.0, 6.4.0
-    - Write on minidump
-*** FreeBSD 7.0.0, 7.1.0, 7.2.0, 7.3.0, 7.4.0
-    - Write on textdump
-**** Notes                                                         :noexport:
-    #https://lists.freebsd.org/pipermail/freebsd-current/2007-December/081626.html
-*** FreeBSD 8.0.0, 8.1.0, 8.2.0, 8.3.0, 8.4.0
-*** FreeBSD 9.0.0, 9.1.0, 9.2.0
-*** FreeBSD 10.0.0, 10.1.0, 10.2.0, 10.3.0
-*** FreeBSD 11.0.0, 11.0.1
-*** FreeBSD 12-CURRENT
-    - Write on encrypted textdump
-#+BEGIN_QUOTE
-    commit f63c437216e0309e4a319c2c95a2f8ca061c0bca
-    Author: def <def@FreeBSD.org>
-    Date:   Sat Dec 10 16:20:39 2016 +0000
-
-    Add support for encrypted kernel crash dumps.
-#+END_QUOTE
-  Not yet done.
 ***** Notes                                                        :noexport:
-      - sys/kern/kern\_dump.c
-      - sys/kern/kern\_shutdown.c
-      - sys/amd64/amd64/machdep\_minidump.c
-      - and rarely bits might be in sys/amd64/amd64/pmap.c
+     - Netdumps
+       - Duke University code from long ago
+       - Picked up by Ed Maste at Sandvine, dropped
+       - Picked up by Mark Johnston at Sandvine
+       - Maintained by Mark Johnston at Isilon
+       - ask someone why netdump is such a pain
+     - https://people.freebsd.org/~attilio/Sandvine/STABLE_8/netdump/netdump_alpha_1.diff
+       - https://web.archive.org/web/20040619062455*/http://www.cs.duke.edu/~anderson/freebsd/netdump/readme.html
+       - https://lists.freebsd.org/pipermail/freebsd-hackers/2010-July/032523.html
+
+**** Compressed Dump
+    Modern systems often have several hundred gigabytes of RAM and will soon
+    often have terabytes. This means full crash dumps, even minidumps, can be
+    much larger than most sensible amounts of swap.
+
+    Though =savecore(8)= has the ability to compress core dumps with the =`-z'=
+    option, this only compresses a core once it is copied into the main
+    filesystem. The core dump that was written to the swap partition remains
+    uncompressed. 
+
+    Compressed dumps see a 6 to 14 compression ratio for core dumps with a
+    slight penalty in the time require to write the dump initially^[8]. However the
+    following =savecore(8)= on the next boot is faster, resulting in a faster
+    dump and reboot sequence.
+
+    Compressed dumps have not yet made it into upstream FreeBSD.
+
+***** Notes                                                        :noexport:
+      - Maintained by Mark Johnston at Isilon 
+      - 2014
+      - https://lists.freebsd.org/pipermail/freebsd-arch/2014-November/016231.html
+**** =minidumpsz= - Minidump Size Estimation
+     =minidumpsz= is a kernel module that can do an online estimation of the
+     size of a minidump if it were to occur at the time ~sysctl
+     debug.mini_dump_size~ is called.
+
+     =minidumpsz= performs an inactive version of the minidump routine,
+     =minidumpsys()=, to estimate the size of a dump if it were to take place at
+     the time of the sysctl's calling.
+
+     =minidumpsz= was created by Rodney W. Grimes for the author's work at
+     Groupon and applies to FreeBSD 10.1 and FreeBSD 11. =minidumpsz= has not
+     yet made it into upstream FreeBSD.
+
 
 ** Core Dumps in Mac OS X
    Mac OS X is capable of creating gzipped core dumps and dumping locally, or
@@ -1247,29 +860,20 @@ dumpstack:
     }
     #+END_SRC
   Not yet done.
-** BSD Core Dump Extensions
-  Not yet done.
 
-*** =netdump= - Network Dump
-    - Netdumps
-      - Duke University code from long ago
-      - Picked up by Ed Maste at Sandvine, dropped
-      - Picked up by Mark Johnston at Sandvine
-      - Maintained by Mark Johnston at Isilon 
-  Not yet done.
-
-*** Compressed Dump
-      - Maintained by Mark Johnston at Isilon 
-  Not yet done.
-*** =minidumpsz= - Minidump Size Estimation
-  Not yet done.
-    Created by Rodney W. Grimes for the author's work at Groupon. =minidumpsz= is a
-    kernel module that can do an online estimation of the size of a minidump if
-    it were to occur at the time ~sysctl debug.mini_dump_size~ is called. 
-
+* The Future
+  Write here on the push for modularization of dump code
 * Conclusion
-  Not yet done.
+  Though it may seem like core dumps are a solved problem from the past, it
+  turns out the core dump code is an ever changing routine that is constantly
+  being adapted to the times. 
+
+** Recommendations
+   - textdumps by defaults, but with better defaults?
+   - documentation should include reccomendations on swap size for different amounts of ram
+     - include amounts for fulldump, minidump and textdump at certain RAM sizes
 * Acknowledgments
+
   The author would like thank Michael Dexter for his help debugging the original
   issues that led to our current combined knowledge of core dumps. In addition
   Rodney W. Grimes' help reading code, from PDP-11 assembly to modern C, along
@@ -1279,12 +883,1036 @@ dumpstack:
   the author into the FreeBSD community and lastly thanks the FreeBSD community
   in general for making this day and paper possible.
 
+
 * References
 
-- [1] The Design and Implementation of the FreeBSD operating system by McKusick, Neville-Neil, and Watson
-- [2] crash(8) - 3BSD
-- [3] man 9 panic - https://www.freebsd.org/cgi/man.cgi?query=panic&apropos=0&sektion=0&manpath=FreeBSD+10.3-RELEASE+and+Ports&arch=default&format=html
-- [4] =kern_shutdown.c= - =sys/kern/kern_shutdown.c=
-- [5] Unix History Repository - https://github.com/dspinellis/unix-history-repo
-- [6] A Repository with 44 Years of Unix Evolution - http://www.dmst.aueb.gr/dds/pubs/conf/2015-MSR-Unix-History/html/Spi15c.html
-- https://en.wikipedia.org/wiki/Core_dump
+ 1. The Design and Implementation of the FreeBSD operating system by McKusick, Neville-Neil, and Watson
+ 2. crash(8) - 3BSD
+ 3. man 9 panic - https://www.freebsd.org/cgi/man.cgi?query=panic&apropos=0&sektion=0&manpath=FreeBSD+10.3-RELEASE+and+Ports&arch=default&format=html
+ 4. =kern_shutdown.c= - =sys/kern/kern_shutdown.c=
+ 5. Unix History Repository - https://github.com/dspinellis/unix-history-repo
+ 6. A Repository with 44 Years of Unix Evolution - http://www.dmst.aueb.gr/dds/pubs/conf/2015-MSR-Unix-History/html/Spi15c.html
+ 7. https://en.wikipedia.org/wiki/Core_dump
+ 8. https://lists.freebsd.org/pipermail/freebsd-arch/2014-November/016231.html
+ 9. https://en.wikipedia.org/wiki/Core_dump
+ 10. https://developer.apple.com/library/content/technotes/tn2004/tn2118.html
+* Appendix
+** The Past: A History Complete of Core Dumps
+
+   The following sections list when different features of the core dump code were
+   introduced starting with the core dump code itself. First the dump facility will
+   be followed through the later versions of Research UNIX and then BSD through
+   to present versions of FreeBSD. 
+
+** Core Dumps in UNIX
+
+   Core dumping was initially a manual process. As documented in Version 6 AT&T
+   UNIX's =crash(8)=, an operator could take a core dump ``if [they felt] up to
+   debugging''. Though 6th Edition is not the first appearance of dump code in
+   UNIX, it is the first complete repository of code the public has access to.
+
+*** 5th Edition UNIX                                               :noexport:
+    5th Edition UNIX's dump code can be found in =usr/sys/conf/mch.s=.
+
+**** Notes                                                         :noexport:
+     =/usr/sys/conf/mch.s=
+# https://github.com/dspinellis/unix-history-repo/blob/Research-V5-Snapshot-Development/usr/sys/conf/mch.s#L826
+
+    #+BEGIN_SRC asm
+.globl	dump
+dump:
+	mov	$4,r0	/ overwrites trap vectors
+	mov	r1,(r0)+
+	mov	r2,(r0)+
+	mov	r3,(r0)+
+	mov	r4,(r0)+
+	mov	r5,(r0)+
+	mov	sp,(r0)+
+	mov	$KISA0,r1
+	mov	$8.,r2
+1:
+	mov	(r1)+,(r0)+
+	sob	r2,1b
+	mov	$MTC,r0
+	mov	$60004,(r0)+
+	clr	2(r0)
+1:
+	mov	$-512.,(r0)
+	inc	-(r0)
+2:
+	tstb	(r0)
+	bge	2b
+	tst	(r0)+
+	bge	1b
+	5
+	mov	$60007,-(r0)
+	br	.
+    #+END_SRC
+*** 6th Edition UNIX
+    In 6th Edition UNIX =crash(8)= teaches us how to manually take a core dump:
+
+    #+BEGIN_QUOTE
+    If the reason for the crash is not evident
+    (see below for guidance on `evident')
+    you may want to try to dump the system if you feel up to
+    debugging.
+    At the moment a dump can be taken only on magtape.
+    With a tape mounted and ready,
+    stop the machine, load address 44, and start.
+    This should write a copy of all of core
+    on the tape with an EOF mark.
+    #+END_QUOTE
+
+     6th Edition UNIX's core dump procedure is defined in =m40.s= and
+     =m45.s= give UNIX support for the PDP-11/40 and PDP-11/45.
+**** Notes                                                         :noexport:
+=/usr/sys/conf/m40.s=
+    # https://github.com/dspinellis/unix-history-repo/blob/Research-V6-Snapshot-Development/usr/sys/conf/m40.s
+    #+BEGIN_SRC asm
+    .globl	dump
+    dump:
+    	bit	$1,SSR0
+    	bne	dump
+    
+    / save regs r0,r1,r2,r3,r4,r5,r6,KIA6
+    / starting at abs location 4
+    
+    	mov	r0,4
+    	mov	$6,r0
+    	mov	r1,(r0)+
+    	mov	r2,(r0)+
+    	mov	r3,(r0)+
+    	mov	r4,(r0)+
+    	mov	r5,(r0)+
+    	mov	sp,(r0)+
+    	mov	KISA6,(r0)+
+    
+    / dump all of core (ie to first mt error)
+    / onto mag tape. (9 track or 7 track 'binary')
+    
+    	mov	$MTC,r0
+    	mov	$60004,(r0)+
+    	clr	2(r0)
+    1:
+    	mov	$-512.,(r0)
+    	inc	-(r0)
+    2:
+    	tstb	(r0)
+    	bge	2b
+    	tst	(r0)+
+    	bge	1b
+    	reset
+    
+    / end of file and loop
+    
+    	mov	$60007,-(r0)
+    	br	.
+    #+END_SRC
+
+***** =/usr/sys/conf/m45.s=                                        :noexport:
+ =/usr/sys/conf/m45.s=
+ # https://github.com/dspinellis/unix-history-repo/blob/Research-V6-Snapshot-Development/usr/sys/conf/m45.s#L21
+ #+BEGIN_SRC asm
+ / Mag tape dump
+ / save registers in low core and
+ / write all core onto mag tape.
+ / entry is thru 44 abs
+
+ .data
+ .globl	dump
+ dump:
+	 bit	$1,SSR0
+	 bne	dump
+
+ / save regs r0,r1,r2,r3,r4,r5,r6,KIA6
+ / starting at abs location 4
+
+	 mov	r0,4
+	 mov	$6,r0
+	 mov	r1,(r0)+
+	 mov	r2,(r0)+
+	 mov	r3,(r0)+
+	 mov	r4,(r0)+
+	 mov	r5,(r0)+
+	 mov	sp,(r0)+
+	 mov	KDSA6,(r0)+
+
+ / dump all of core (ie to first mt error)
+ / onto mag tape. (9 track or 7 track 'binary')
+
+	 mov	$MTC,r0
+	 mov	$60004,(r0)+
+	 clr	2(r0)
+ 1:
+	 mov	$-512.,(r0)
+	 inc	-(r0)
+ 2:
+	 tstb	(r0)
+	 bge	2b
+	 tst	(r0)+
+	 bge	1b
+	 reset
+
+ / end of file and loop
+
+	 mov	$60007,-(r0)
+	 br	.
+ #+END_SRC
+*** 7th Edition UNIX
+    7th Edition UNIX adds support for the PDP-11/70.
+**** Notes                                                         :noexport:
+=/usr/sys/conf/mch.s=
+# https://github.com/dspinellis/unix-history-repo/blob/Research-V7-Snapshot-Development/usr/sys/conf/mch.s#L26
+=/usr/sys/conf/mch.s=
+#+BEGIN_SRC asm
+/ Mag tape dump
+/ save registers in low core and
+/ write all core onto mag tape.
+/ entry is thru 44 abs
+
+.data
+.globl	dump
+dump:
+
+/ save regs r0,r1,r2,r3,r4,r5,r6,KIA6
+/ starting at abs location 4
+
+	mov	r0,4
+	mov	$6,r0
+	mov	r1,(r0)+
+	mov	r2,(r0)+
+	mov	r3,(r0)+
+	mov	r4,(r0)+
+	mov	r5,(r0)+
+	mov	sp,(r0)+
+	mov	KDSA6,(r0)+
+
+/ dump all of core (ie to first mt error)
+/ onto mag tape. (9 track or 7 track 'binary')
+
+.if HTDUMP
+	mov	$HTCS1,r0
+	mov	$40,*$HTCS2
+	mov	$2300,*$HTTC
+	clr	*$HTBA
+	mov	$1,(r0)
+1:
+	mov	$-512.,*$HTFC
+	mov	$-256.,*$HTWC
+	movb	$61,(r0)
+2:
+	tstb	(r0)
+	bge	2b
+	bit	$1,(r0)
+	bne	2b
+	bit	$40000,(r0)
+	beq	1b
+	mov	$27,(r0)
+.endif
+HT	= 0172440
+HTCS1	= HT+0
+HTWC	= HT+2
+HTBA	= HT+4
+HTFC	= HT+6
+HTCS2	= HT+10
+HTTC	= HT+32
+
+MTC = 172522
+.if TUDUMP
+	mov	$MTC,r0
+	mov	$60004,(r0)+
+	clr	2(r0)
+1:
+	mov	$-512.,(r0)
+	inc	-(r0)
+2:
+	tstb	(r0)
+	bge	2b
+	tst	(r0)+
+	bge	1b
+	reset
+
+/ end of file and loop
+
+	mov	$60007,-(r0)
+.endif
+	br	.
+#+END_SRC
+
+*** UNIX/32V
+    UNIX/32V was an early port of UNIX to the DEC VAX architecture making use
+    of the C programming language to decouple the code from the PDP-11.
+    =/usr/src/sys/sys/locore.s= contains the first appearance of =doadump()=, the
+    same function name used today, written in VAX assembly.
+****  Notes                                                        :noexport:
+=/usr/src/sys/sys/locore.s=
+# https://en.wikipedia.org/wiki/UNIX/32V
+# https://github.com/dspinellis/unix-history-repo/blob/Bell-32V-Snapshot-Development/usr/src/sys/sys/locore.s#L158
+=/usr/src/sys/sys/locore.s=
+#+BEGIN_SRC asm
+#  0x200
+# Produce a core image dump on mag tape
+	.globl	doadump
+doadump:
+	movl	sp,dumpstack	# save stack pointer
+	movab	dumpstack,sp	# reinit stack
+	mfpr	$PCBB,-(sp)	# save u-area pointer
+	mfpr	$MAPEN,-(sp)	# save value
+	mfpr	$IPL,-(sp)	# ...
+	mtpr	$0,$MAPEN		# turn off memory mapping
+	mtpr	$HIGH,$IPL		# disable interrupts
+	pushr	$0x3fff			# save regs 0 - 13
+	calls	$0,_dump	# produce dump
+	halt
+
+	.data
+	.align	2
+	.globl	dumpstack
+	.space	58*4		# seperate stack for tape dumps
+dumpstack: 
+	.space	4
+	.text
+#+END_SRC
+
+** Core Dumps in BSD
+
+# probably just brought into source control with his name
+# =doadump= was added to 3BSD in 1980 by
+# Ozalp Babaoglu and was written in 33 lines of PDP-11 assembly.
+
+# TODO Talk here about added architectures? Pretty much everything is the same
+# from here on out just added architectures
+*** 1BSD & 2BSD
+    1BSD and 2BSD inherited their dump code directly from 6th Edition UNIX and
+    is therefore supports the PDP-11/40 and PDP-11/45.
+*** 3BSD
+    3BSD imports its' dump code from UNIX/32V maintaining the name =doadump()=.
+    Because of this pedigree, =doadump()= is written in VAX assembly.
+
+    A ``todo'' list found in =usr/src/sys/sys/TODO= notes that ``large core dumps
+    are awful and even uninterruptible!''.
+
+    # https://github.com/dspinellis/unix-history-repo/blob/BSD-3-Snapshot-Development/usr/src/sys/sys/locore.s#L174
+    # https://github.com/dspinellis/unix-history-repo/blob/BSD-3-Snapshot-Development/usr/src/sys/sys/TODO
+**** Notes                                                         :noexport:
+     =/usr/src/sys/sys/locore.s=
+    =doadump=
+    #+BEGIN_SRC asm
+# =====================================
+# Produce a core image dump on mag tape
+# =====================================
+	.globl	doadump
+doadump:
+	movl	sp,dumpstack		# save stack pointer
+	movab	dumpstack,sp		# reinit stack
+	mfpr	$PCBB,-(sp)		# save u-area pointer
+	mfpr	$MAPEN,-(sp)		# save value
+	mfpr	$IPL,-(sp)		# ...
+	mtpr	$0,$MAPEN		# turn off memory mapping
+	mtpr	$HIGH,$IPL		# disable interrupts
+	pushr	$0x3fff			# save regs 0 - 13
+	calls	$0,_dump		# produce dump
+	halt
+
+	.data
+	.align	2
+	.globl	dumpstack
+	.space	58*4			# separate stack for tape dumps
+dumpstack: 
+	.space	4
+	.text
+    #+END_SRC
+*** 4BSD
+    4BSD introduces a new feature to =doadump=, printing tracing information
+    with =dumptrc=. 
+
+    In addition, =usr/src/sys/sys/TODO= is the first mention of writing dumps to
+    swap: "Support automatic dumps to paging area".
+**** Notes                                                         :noexport:
+    # before
+    # https://github.com/dspinellis/unix-history-repo/blob/BSD-4-Snapshot-Development/usr/src/sys/sys/locore.s#L174
+    # - add trace information with _dumptrc
+    # https://github.com/dspinellis/unix-history-repo/blob/BSD-4-Snapshot-Development/usr/src/sys/sys/TODO#L28
+    # - First talk of dump to swap in =/usr/src/sys/sys/TODO=
+*** 4.1BSD
+
+     Beginning in 4.1BSD =doadump()= is relegated to setting up the machine for
+     =dumpsys()= which is written in C and found in =sys/vax/vax/machdep.c=. 
+
+     As of 4.1c2BSD =doadump()= now fulfills the "todo" listed in 4BSD and dumps
+     to the "paging area", or swap. =savecore(8)= is introduced to extract the
+     core from the swap partition and place it in the filesystem.
+
+     - Support for VAX750, VAX780, VAX7ZZ (VAX730)
+     - In 4.1c2BSD changes VAX7ZZ references to VAX730
+
+**** Notes                                                         :noexport:
+    # https://github.com/dspinellis/unix-history-repo/blob/BSD-4_1c_2-Snapshot-Development/a/sys/vax/Locore.c#L36
+    # https://github.com/dspinellis/unix-history-repo/blob/BSD-4_1_snap-Snapshot-Development/sys/sys/Locore.c#L32
+    # - Back to asm? Actually I might be wrong, it might be a C/asm hybrid right now
+    # https://github.com/dspinellis/unix-history-repo/blob/BSD-4_1_snap-Snapshot-Development/sys/GENERIC/locore.c#L112
+*** 4.2BSD
+    - no changes.
+**** Notes                                                         :noexport:
+    - check this again
+    # https://github.com/dspinellis/unix-history-repo/blob/BSD-4_1_snap-Snapshot-Development/sys/sys/Locore.c#L32
+*** 4.3BSD
+**** 4.3 BSD-Tahoe
+     - Initial support is added for the ``tahoe'' processor and 
+       and =doadump= is ported to the tahoe.
+     
+     # - =savecore()= is re-written in ANSI C.
+ # http://gunkies.org/wiki/4.3_BSD_Tahoe
+ #     The primary purpose of this release is to provide  sup- 
+ # port  for  the ``tahoe'' processor, the CPU used by Computer 
+ # Consoles, Inc. (CCI Power 6/32, 6/32SX), and high end  lines 
+ # of Harris (HCX-7 and HCX-9), Unisys (7000/40), and ICL (Clan 
+ # 7).  Support for this processor is derived from  the  4.2BSD 
+ # system  done by CCI.  Support for new DEC equipment has also 
+ # been added, including support for the 8250 BI-based CPU  and 
+ # the KDB-50 BI disk controller from Chris Torek, and the QVSS 
+ # and QDSS display drivers for the MicroVAX II, contributed by 
+ # Digital Equipment Corporation.  We expect to provide support 
+ # for  both  the  VAX  and  the  tahoe  processors  in  future 
+ # releases. 
+**** 4.3 BSD Net/1
+     - Same as 4.3-Tahoe
+***** Notes                                                        :noexport:
+**** 4.3 BSD-Reno
+     - hp300 and i386 core dump support is added in =usr/src/sys/hp300/locore.s=
+       and =usr/src/sys/i386/locore.s=, respectively.
+ # hp300 support came from Utah
+***** Notes                                                        :noexport:
+**** 4.3 BSD Net/2
+     - Same as Reno
+*** 4.4BSD
+    - luna68k support added
+    - news3400 support added
+    - pmax support added
+    - sparc support added
+    # =usr/src/sys/luna68k/luna68k/locore.s= introduces OMRON m68030 support
+    # including dump support.
+    # in 1992 -- I'm born finally!
+**** 4.4-BSD Lite1 & 4.4-BSD Lite2
+     - Same as 4.4BSD -- changes made due to AT&T UNIX System Laboratories (USL) lawsuit.
+**** 4.4-BSD Lite1                                                 :noexport:
+     Same as 4.4 -- changes made due to AT&T UNIX System Laboratories (USL) lawsuit.
+**** 4.4-BSD Lite2                                                 :noexport:
+     Same as 4.4 -- changes made due to USL lawsuit.
+*** 386BSD
+**** 386BSD 0.0
+     - Reduce support to i386 and hp300 support
+**** 386BSD 0.1
+     - hp300 code removed
+**** 386BSD 0.1-patchkit
+     - Same as 386BSD 0.1
+** Core Dumps in FreeBSD
+*** FreeBSD 1.0
+# **** FreeBSD 1.0
+     - i386 support, hp300 support from 386BSD-0.1-patchkit
+**** FreeBSD 1.1                                                   :noexport:
+**** FreeBSD 1.1.5                                                 :noexport:
+***** Notes                                                        :noexport:
+      hp300 and is back?
+*** FreeBSD 2.0.0 
+**** FreeBSD 2.0.0 
+     - =doadump()= no longer exists, though is mentioned in comments. 
+**** FreeBSD 2.0.5 :noexport:
+**** FreeBSD 2.1.0 :noexport:
+**** FreeBSD 2.1.5 :noexport:
+**** FreeBSD 2.1.6 :noexport:
+**** FreeBSD 2.1.6.1 :noexport:
+**** FreeBSD 2.1.7 :noexport:
+**** FreeBSD 2.2.0
+     - =dumpsys()= is placed inside =boot()= and =dumpsys()= in =kern_shutdown.c=
+       because code was not seen as machine dependent.
+**** FreeBSD 2.2.1 :noexport:
+**** FreeBSD 2.2.2 :noexport:
+**** FreeBSD 2.2.5 :noexport:
+**** FreeBSD 2.2.6 :noexport:
+**** FreeBSD 2.2.7                                                 :noexport:
+**** FreeBSD 2.2.8                                                 :noexport:
+**** Notes                                                         :noexport:
+     # Pulls in 4.4BSD-Lite1 code for hp300, luna68k, news3400, pmax, and sparc.
+#+BEGIN_QUOTE
+  /ssh:freebsd-current:/root/src/unix-history-repo/:
+  find . \( -type f -exec grep -q -e dumpsys \{\} \; \) -ls
+  1945687      144 -rw-r--r--    1 root                             wheel                               72708 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/hp300/hp300/locore.s
+  1945688       80 -rw-r--r--    1 root                             wheel                               40785 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/hp300/hp300/machdep.c
+  1785250     1728 -rw-r--r--    1 root                             wheel                              836045 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/hp300/tags
+  973678       64 -rw-r--r--    1 root                             wheel                               30221 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/i386/i386/machdep.c
+  973686     1536 -rw-r--r--    1 root                             wheel                              746387 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/i386/tags
+  2506530      128 -rw-r--r--    1 root                             wheel                               63107 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/luna68k/luna68k/locore.s
+  2506531       64 -rw-r--r--    1 root                             wheel                               30470 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/luna68k/luna68k/machdep.c
+  2506880       48 -rw-r--r--    1 root                             wheel                               23756 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/news3400/news3400/machdep.c
+  2506902     1856 -rw-r--r--    1 root                             wheel                              891210 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/news3400/tags
+  2271373       56 -rw-r--r--    1 root                             wheel                               28486 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/pmax/dev/rz.c
+  2506949      112 -rw-r--r--    1 root                             wheel                               53461 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/pmax/pmax/machdep.c
+  2188752     1792 -rw-r--r--    1 root                             wheel                              862201 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/pmax/tags
+  2507078       48 -rw-r--r--    1 root                             wheel                               22534 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/sparc/sparc/machdep.c
+  1130530     1664 -rw-r--r--    1 root                             wheel                              804425 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/sparc/tags
+  1860931     1600 -rw-r--r--    1 root                             wheel                              773455 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/tahoe/tags
+  1945710     2240 -rw-r--r--    1 root                             wheel                             1096432 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/vax/tags
+  2574311       80 -rw-r--r--    1 root                             wheel                               38769 Dec 23 02:00 .ref-FreeBSD-release/1.1.5/sys/i386/i386/machdep.c
+  1703024       88 -rw-r--r--    1 root                             wheel                               44085 Dec 23 02:00 sys/i386/i386/machdep.c
+#+END_QUOTE
+
+*** FreeBSD 3.0.0
+# **** FreeBSD 3.0.0
+    # - Enable kernel dumps on SLICE systems.
+    - SMP support
+    - alpha support
+**** FreeBSD 3.1.0                                                 :noexport:
+**** FreeBSD 3.2.0                                                 :noexport:
+**** FreeBSD 3.3.0                                                 :noexport:
+**** FreeBSD 3.4.0                                                 :noexport:
+**** FreeBSD 3.5.0                                                 :noexport:
+**** Notes                                                         :noexport:
+#+BEGIN_SRC c
+/*
+ *  Go through the rigmarole of shutting down..
+ * this used to be in machdep.c but I'll be dammned if I could see
+ * anything machine dependant in it.
+ */
+static void
+boot(howto)
+	int howto;
+{
+	sle_p ep;
+
+#ifdef SMP
+	if (smp_active) {
+		printf("boot() called on cpu#%d\n", cpuid);
+	}
+#endif
+	/*
+	 * Do any callouts that should be done BEFORE syncing the filesystems.
+	 */
+	LIST_FOREACH(ep, &shutdown_lists[SHUTDOWN_PRE_SYNC], links)
+		(*ep->function)(howto, ep->arg);
+
+	/* 
+	 * Now sync filesystems
+	 */
+	if (!cold && (howto & RB_NOSYNC) == 0 && waittime < 0) {
+		register struct buf *bp;
+		int iter, nbusy;
+
+		waittime = 0;
+		printf("\nsyncing disks... ");
+
+		sync(&proc0, NULL);
+
+		/*
+		 * With soft updates, some buffers that are
+		 * written will be remarked as dirty until other
+		 * buffers are written.
+		 */
+		for (iter = 0; iter < 20; iter++) {
+			nbusy = 0;
+			for (bp = &buf[nbuf]; --bp >= buf; ) {
+				if ((bp->b_flags & (B_BUSY | B_INVAL))
+						== B_BUSY) {
+					nbusy++;
+				} else if ((bp->b_flags & (B_DELWRI | B_INVAL))
+						== B_DELWRI) {
+					/* bawrite(bp);*/
+					nbusy++;
+				}
+			}
+			if (nbusy == 0)
+				break;
+			printf("%d ", nbusy);
+			sync(&proc0, NULL);
+			DELAY(50000 * iter);
+		}
+		if (nbusy) {
+			/*
+			 * Failed to sync all blocks. Indicate this and don't
+			 * unmount filesystems (thus forcing an fsck on reboot).
+			 */
+			printf("giving up\n");
+#ifdef SHOW_BUSYBUFS
+			nbusy = 0;
+			for (bp = &buf[nbuf]; --bp >= buf; ) {
+				if ((bp->b_flags & (B_BUSY | B_INVAL))
+						== B_BUSY) {
+					nbusy++;
+					printf(
+			"%d: dev:%08lx, flags:%08lx, blkno:%ld, lblkno:%ld\n",
+					    nbusy, (u_long)bp->b_dev,
+					    bp->b_flags, (long)bp->b_blkno,
+					    (long)bp->b_lblkno);
+				}
+			}
+			DELAY(5000000);	/* 5 seconds */
+#endif
+		} else {
+			printf("done\n");
+			/*
+			 * Unmount filesystems
+			 */
+			if (panicstr == 0)
+				vfs_unmountall();
+		}
+		DELAY(100000);		/* wait for console output to finish */
+	}
+
+	/*
+	 * Ok, now do things that assume all filesystem activity has
+	 * been completed.
+	 */
+	LIST_FOREACH(ep, &shutdown_lists[SHUTDOWN_POST_SYNC], links)
+		(*ep->function)(howto, ep->arg);
+	splhigh();
+	if ((howto & (RB_HALT|RB_DUMP)) == RB_DUMP && !cold) {
+		savectx(&dumppcb);
+#ifdef __i386__
+		dumppcb.pcb_cr3 = rcr3();
+#endif
+		dumpsys();
+	}
+
+	/* Now that we're going to really halt the system... */
+	LIST_FOREACH(ep, &shutdown_lists[SHUTDOWN_FINAL], links)
+		(*ep->function)(howto, ep->arg);
+
+	if (howto & RB_HALT) {
+		cpu_power_down();
+		printf("\n");
+		printf("The operating system has halted.\n");
+		printf("Please press any key to reboot.\n\n");
+		switch (cngetc()) {
+		case -1:		/* No console, just die */
+			cpu_halt();
+			/* NOTREACHED */
+		default:
+			howto &= ~RB_HALT;
+			break;
+		}
+	} else if (howto & RB_DUMP) {
+		/* System Paniced */
+
+		if (PANIC_REBOOT_WAIT_TIME != 0) {
+			if (PANIC_REBOOT_WAIT_TIME != -1) {
+				int loop;
+				printf("Automatic reboot in %d seconds - "
+				       "press a key on the console to abort\n",
+					PANIC_REBOOT_WAIT_TIME);
+				for (loop = PANIC_REBOOT_WAIT_TIME * 10;
+				     loop > 0; --loop) {
+					DELAY(1000 * 100); /* 1/10th second */
+					/* Did user type a key? */
+					if (cncheckc() != -1)
+						break;
+				}
+				if (!loop)
+					goto die;
+			}
+		} else { /* zero time specified - reboot NOW */
+			goto die;
+		}
+		printf("--> Press a key on the console to reboot <--\n");
+		cngetc();
+	}
+die:
+	printf("Rebooting...\n");
+	DELAY(1000000);	/* wait 1 sec for printf's to complete and be read */
+	/* cpu_boot(howto); */ /* doesn't do anything at the moment */
+	cpu_reset();
+	for(;;) ;
+	/* NOTREACHED */
+}
+
+#+END_SRC
+    
+*** FreeBSD 4.0.0
+# **** FreeBSD 4.0.0
+     - Added print uptime before rebooting.
+     - Better error message when dumps are not supported
+**** FreeBSD 4.1.0                                                 :noexport:
+**** FreeBSD 4.1.1                                                 :noexport:
+**** FreeBSD 4.2.0                                                 :noexport:
+**** FreeBSD 4.3.0                                                 :noexport:
+**** FreeBSD 4.4.0                                                 :noexport:
+**** FreeBSD 4.5.0                                                 :noexport:
+**** FreeBSD 4.6.0                                                 :noexport:
+**** FreeBSD 4.6.1                                                 :noexport:
+**** FreeBSD 4.6.2                                                 :noexport:
+**** FreeBSD 4.7.0                                                 :noexport:
+**** FreeBSD 4.8.0                                                 :noexport:
+**** FreeBSD 4.9.0                                                 :noexport:
+**** FreeBSD 4.10.0                                                :noexport:
+**** FreeBSD 4.11.0                                                :noexport:
+**** Notes                                                         :noexport:
+***** DONE Check print uptime earliest version.
+      CLOSED: [2017-01-12 Thu 09:55]
+
+*** FreeBSD 5.0.0
+# **** FreeBSD 5.0.0
+     - Added IA64, sparc64, and pc98 support.
+     - New kernel dump infrastructure. Broken out to individual architectures
+       again. =doadump()= is back!
+     - Crash dumps can now be obtained in the late stages of kernel
+       initialisation before single user mode
+**** FreeBSD 5.1.0                                                 :noexport:
+**** FreeBSD 5.2.0                                                 :noexport:
+     - AMD64 a Tier1 supported architecture
+**** FreeBSD 5.2.1                                                 :noexport:
+**** FreeBSD 5.3.0                                                 :noexport:
+**** FreeBSD 5.4.0                                                 :noexport:
+**** FreeBSD 5.5.0                                                 :noexport:
+**** Notes                                                         :noexport:
+     - 5.0 16 Jan 2003
+***** TODO Check NEW support
+***** TODO savecore and dumpon changes
+***** TODO BIG CHANGES -- More attention here
+***** 2002 Poul-Henning Kamp
+
+    #+BEGIN_QUOTE
+Here follows the new kernel dumping infrastructure.
+
+Caveats:
+
+The new savecore program is not complete in the sense that it emulates
+enough of the old savecores features to do the job, but implements none
+of the options yet.
+
+I would appreciate if a userland hacker could help me out getting savecore
+to do what we want it to do from a users point of view, compression,
+email-notification, space reservation etc etc.  (send me email if
+you are interested).
+
+Currently, savecore will scan all devices marked as "swap" or "dump" in
+/etc/fstab _or_ any devices specified on the command-line.
+
+All architectures but i386 lack an implementation of dumpsys(), but
+looking at the i386 version it should be trivial for anybody familiar
+with the platform(s) to provide this function.
+
+Documentation is quite sparse at this time, more to come.
+
+Details:
+
+ATA and SCSI drivers should work as the dump formatting code has been
+removed.  The IDA, TWE and AAC have not yet been converted.
+
+Dumpon now opens the device and uses ioctl(DIOCGKERNELDUMP) to set
+the device as dumpdev.  To implement the "off" argument, /dev/null
+is used as the device.
+
+Savecore will fail if handed any options since they are not (yet)
+implemented.  All devices marked "dump" or "swap" in /etc/fstab
+will be scanned and dumps found will be saved to diskfiles
+named from the MD5 hash of the header record.  The header record
+is dumped in readable format in the .info file.  The kernel
+is not saved.  Only complete dumps will be saved.
+
+All maintainer rights for this code are disclaimed: feel free to
+improve and extend.
+
+Sponsored by:   DARPA, NAI Labs
+#+END_QUOTE
+*** FreeBSD 6.0.0
+**** FreeBSD 6.0.0
+     - AMD64 and arm support added.
+     - AMD64 and i386 switch to ELF as their crash dump format.
+     - AMD64 and i386 bump their dump format to version 2.
+**** FreeBSD 6.1.0                                                 :noexport:
+**** FreeBSD 6.2.0
+     - minidump code added.
+**** FreeBSD 6.3.0                                                 :noexport:
+**** FreeBSD 6.4.0                                                 :noexport:
+**** Notes                                                         :noexport:
+     - 9 October 2005
+     - 6.0
+       - amd64 support added
+       - dump format bumped to 2
+     - 6.2.0
+       - As of 6.2.0 minidump - peter wemm
+    - THIS is WHAT STARTED THIS PROJECT 47c4404f96c6 * Don't dump core into a
+      partition that is too small for it. If we do, we usually wrote backwareds
+      into the proceeding partititon which is usually the root partition. 
+*** FreeBSD 7.0.0
+**** FreeBSD 7.0.0
+     - sun4v support added
+     - minidumps are now default
+     - alpha support is removed
+**** FreeBSD 7.1.0
+     - textdump code is added
+**** FreeBSD 7.2.0                                                 :noexport:
+**** FreeBSD 7.3.0                                                 :noexport:
+**** FreeBSD 7.4.0                                                 :noexport:
+**** Notes                                                         :noexport:
+       - Architectures
+         - arm
+         - i386
+         - sun4v
+         - amd64
+         - ia64
+         - sparc64
+    # https://lists.freebsd.org/pipermail/freebsd-current/2007-December/081626.html
+*** FreeBSD 8.0.0
+# **** FreeBSD 8.0.0
+     - PowerPC support added.
+     - mips support added.
+**** FreeBSD 8.1.0                                                 :noexport:
+**** FreeBSD 8.2.0                                                 :noexport:
+**** FreeBSD 8.3.0                                                 :noexport:
+**** FreeBSD 8.4.0                                                 :noexport:
+
+**** Notes                                                         :noexport:
+     - 22 November 2009
+     - 8.0
+       - Architectures
+         - arm
+         - i386
+         - sun4v
+         - amd64
+         - ia64
+         - sparc64
+         - mips (NEW)
+         - powerpc (NEW)
+*** FreeBSD 9.0.0
+# **** FreeBSD 9.0.0
+      - Merge common amd64/i386 dump code under =sys/x86= subtree.
+      - Only dump at first panic in the event of a double panic 
+      - Add dump command for DDB
+      - Minidump v2
+***** Notes                                                        :noexport:
+      - Explain new stuff in Minidump v2
+       - 3 January 2012
+**** FreeBSD 9.1.0                                                 :noexport:
+**** FreeBSD 9.2.0                                                 :noexport:
+**** Notes                                                         :noexport:
+***** commit 3ac86ffe8c96b93a27e1e5bd872497446f543899
+Author: Attilio Rao <attilio@FreeBSD.org>
+Date:   Wed Jun 8 19:28:59 2011 +0000
+
+    In the current code, a double panic condition may lead to dumps
+    interleaving.
+    Signal dumping to happen only for the first panic which should be the
+    most important.
+
+    Sponsored by:   Sandvine Incorporated
+    Submitted by:   Nima Misaghian (nmisaghian AT sandvine DOT com)
+    MFC after:      2 weeks
+***** commit 7ffd4bc3ff05520393dc1061410d1b82d37af823
+Author: Marcel Moolenaar <marcel@FreeBSD.org>
+Date:   Tue Jun 7 01:28:12 2011 +0000
+
+    Fix making kernel dumps from the debugger by creating a command
+    for it. Do not not expect a developer to call doadump(). Calling
+    doadump does not necessarily work when it's declared static. Nor
+    does it necessarily do what was intended in the context of text
+    dumps. The dump command always creates a core dump.
+
+    Move printing of error messages from doadump to the dump command,
+    now that we don't have to worry about being called from DDB.
+*** FreeBSD 10.0.0
+# **** FreeBSD 10.0.0
+    - On systems with SMP, CPUs other than the one processing the panic are
+      stopped. This behavior is tunable with the sysctl `kern.stop_scheduler_on_panic'
+**** FreeBSD 10.1.0                                                :noexport:
+**** FreeBSD 10.2.0                                                :noexport:
+**** FreeBSD 10.3.0                                                :noexport:
+
+**** Notes                                                         :noexport:
+     - 15 January 2014
+     - list who has minidumps
+     - Found great note in sys/ddb/db_textdump.c
+*** FreeBSD 11.0.0
+# **** FreeBSD 11.0.0
+     - RISC-V support added.
+     - arm64 support added.
+     - Factored out duplicated code from =dumpsys()= on each each architecture
+       into =sys/kern/kern_dump.c=
+     - A `show panic' command was added to DDB
+     - "4Kn" kernel dump support. Dumps are now written out in the native block
+       size. =savecore(1)= updated accordingly.
+     - "4Kn" minidump support for AMD64 only
+     - =strlcpy(3)= is used to properly null-terminate strings in kernel dump header
+**** FreeBSD 11.0.1                                                :noexport:
+**** Notes                                                         :noexport:
+     - 28 September 2016
+     - archs
+       - add riscV
+       - arm64
+     - factored out duplicated code from =dumpsys()= on each each architecture
+       into =sys/kern/kern_dump.c=
+***** 7b143fb29f444afdeb1556558771ab521096edef
+Author:     Mark Johnston <markj@FreeBSD.org>
+AuthorDate: Wed Jan 7 01:01:39 2015 +0000
+Commit:     Mark Johnston <markj@FreeBSD.org>
+CommitDate: Wed Jan 7 01:01:39 2015 +0000
+
+Parent:     a2c98547f907 Use the new process reaper functionality
+Containing: FreeBSD-release/11.0.0
+Follows:    Research-V2 (404857)
+
+Factor out duplicated code from dumpsys() on each architecture into generic
+code in sys/kern/kern_dump.c. Most dumpsys() implementations are nearly
+identical and simply redefine a number of constants and helper subroutines;
+a generic implementation will make it easier to implement features around
+kernel core dumps. This change does not alter any minidump code and should
+have no functional impact.
+
+PR:		193873
+Differential Revision:	https://reviews.freebsd.org/D904
+Submitted by:	Conrad Meyer <conrad.meyer@isilon.com>
+Reviewed by:	jhibbits (earlier version)
+Sponsored by:	EMC / Isilon Storage Division
+
+*** FreeBSD 12-CURRENT
+  - Support for encrypted kernel crash dumps added. =dumpon(8)= and
+    =savecore(8)= updated accordingly. New tool for decrypting cores added,
+    =decryptcore(8)=. Tested on amd64, i386, mipsel and sparc64. Untested on arm
+    and arm64. Encrypted textdump is not yet implemented.
+**** Notes                                                         :noexport:
+  - r309818
+#+BEGIN_QUOTE
+    commit f63c437216e0309e4a319c2c95a2f8ca061c0bca
+    Author: def <def@FreeBSD.org>
+    Date:   Sat Dec 10 16:20:39 2016 +0000
+
+    Add support for encrypted kernel crash dumps.
+#+END_QUOTE
+#+BEGIN_QUOTE
+  File                           Function Line
+0 sparc64/include/dump.h         <global>  38 int dumpsys(struct dumperinfo *);
+1 arm/include/dump.h             dumpsys   64 dumpsys(struct dumperinfo *di)
+2 arm64/include/dump.h           dumpsys   68 dumpsys(struct dumperinfo *di)
+3 sys/kern/kern_shutdown.c       doadump  329 error = dumpsys(&dumper);
+4 mips/include/dump.h            dumpsys   70 dumpsys(struct dumperinfo *di)
+5 powerpc/include/dump.h         dumpsys   63 dumpsys(struct dumperinfo *di)
+6 riscv/include/dump.h           dumpsys   76 dumpsys(struct dumperinfo *di)
+7 sparc64/sparc64/dump_machdep.c dumpsys   77 dumpsys(struct dumperinfo *di)
+8 x86/include/dump.h             dumpsys   81 dumpsys(struct dumperinfo *di)
+#+END_QUOTE
+#+BEGIN_QUOTE
+Working file: /ssh:freebsd-current:/root/src/freebsd-head-svn/sys/amd64/amd64/minidump_machdep.c
+------------------------------------------------------------------------
+r309818 | def | 2016-12-10 10:20:39 -0600 (Sat, 10 Dec 2016) | 67 lines
+
+Add support for encrypted kernel crash dumps.
+
+Changes include modifications in kernel crash dump routines, dumpon(8) and
+savecore(8). A new tool called decryptcore(8) was added.
+
+A new DIOCSKERNELDUMP I/O control was added to send a kernel crash dump
+configuration in the diocskerneldump_arg structure to the kernel.
+The old DIOCSKERNELDUMP I/O control was renamed to DIOCSKERNELDUMP_FREEBSD11 for
+backward ABI compatibility.
+
+dumpon(8) generates an one-time random symmetric key and encrypts it using
+an RSA public key in capability mode. Currently only AES-256-CBC is supported
+but EKCD was designed to implement support for other algorithms in the future.
+The public key is chosen using the -k flag. The dumpon rc(8) script can do this
+automatically during startup using the dumppubkey rc.conf(5) variable.  Once the
+keys are calculated dumpon sends them to the kernel via DIOCSKERNELDUMP I/O
+control.
+
+When the kernel receives the DIOCSKERNELDUMP I/O control it generates a random
+IV and sets up the key schedule for the specified algorithm. Each time the
+kernel tries to write a crash dump to the dump device, the IV is replaced by
+a SHA-256 hash of the previous value. This is intended to make a possible
+differential cryptanalysis harder since it is possible to write multiple crash
+dumps without reboot by repeating the following commands:
+# sysctl debug.kdb.enter=1
+db> call doadump(0)
+db> continue
+# savecore
+
+A kernel dump key consists of an algorithm identifier, an IV and an encrypted
+symmetric key. The kernel dump key size is included in a kernel dump header.
+The size is an unsigned 32-bit integer and it is aligned to a block size.
+The header structure has 512 bytes to match the block size so it was required to
+make a panic string 4 bytes shorter to add a new field to the header structure.
+If the kernel dump key size in the header is nonzero it is assumed that the
+kernel dump key is placed after the first header on the dump device and the core
+dump is encrypted.
+
+Separate functions were implemented to write the kernel dump header and the
+kernel dump key as they need to be unencrypted. The dump_write function encrypts
+data if the kernel was compiled with the EKCD option. Encrypted kernel textdumps
+are not supported due to the way they are constructed which makes it impossible
+to use the CBC mode for encryption. It should be also noted that textdumps don't
+contain sensitive data by design as a user decides what information should be
+dumped.
+
+savecore(8) writes the kernel dump key to a key.# file if its size in the header
+is nonzero. # is the number of the current core dump.
+
+decryptcore(8) decrypts the core dump using a private RSA key and the kernel
+dump key. This is performed by a child process in capability mode.
+If the decryption was not successful the parent process removes a partially
+decrypted core dump.
+
+Description on how to encrypt crash dumps was added to the decryptcore(8),
+dumpon(8), rc.conf(5) and savecore(8) manual pages.
+
+EKCD was tested on amd64 using bhyve and i386, mipsel and sparc64 using QEMU.
+The feature still has to be tested on arm and arm64 as it wasn't possible to run
+FreeBSD due to the problems with QEMU emulation and lack of hardware.
+
+Designed by:	def, pjd
+Reviewed by:	cem, oshogbo, pjd
+Partial review:	delphij, emaste, jhb, kib
+Approved by:	pjd (mentor)
+Differential Revision:	https://reviews.freebsd.org/D4712
+
+------------------------------------------------------------------------
+r307540 | stevek | 2016-10-17 17:57:41 -0500 (Mon, 17 Oct 2016) | 9 lines
+
+Add sysctl to make amd64 minidump retry count tunable at runtime.
+
+PR:		213462
+Submitted by:	RaviPrakash Darbha <rdarbha@juniper.net>
+Reviewed by:	cemi, markj
+Approved by:	sjg (mentor)
+Obtained from:	Juniper Networks
+Differential Revision:	https://reviews.freebsd.org/D8254
+
+------------------------------------------------------------------------
+r306020 | kib | 2016-09-20 04:38:07 -0500 (Tue, 20 Sep 2016) | 6 lines
+
+Move pmap_p*e_index() inline functions from pmap.c to pmap.h.
+They are already used in minidump code.
+
+Sponsored by:	The FreeBSD Foundation
+MFC after:	1 week
+
+------------------------------------------------------------------------
+r298076 | cem | 2016-04-15 12:45:12 -0500 (Fri, 15 Apr 2016) | 26 lines
+
+Add 4Kn kernel dump support
+
+(And 4Kn minidump support, but only for amd64.)
+
+Make sure all I/O to the dump device is of the native sector size.  To
+that end, we keep a native sector sized buffer associated with dump
+devices (di->blockbuf) and use it to pad smaller objects as needed (e.g.
+kerneldumpheader).
+
+Add dump_write_pad() as a convenience API to dump smaller objects with
+zero padding.  (Rather than pull in NPM leftpad, we wrote our own.)
+
+Savecore(1) has been updated to deal with these dumps.  The format for
+512-byte sector dumps should remain backwards compatible.
+
+Minidumps for other architectures are left as an exercise for the
+reader.
+
+PR:		194279
+Submitted by:	ambrisko@
+Reviewed by:	cem (earlier version), rpokala
+Tested by:	rpokala (4Kn/512 except 512 fulldump), cem (512 fulldump)
+Relnotes:	yes
+Sponsored by:	EMC / Isilon Storage Division
+Differential Revision:	https://reviews.freebsd.org/D5848
+#+END_QUOTE
+      - sys/kern/kern\_dump.c
+      - sys/kern/kern\_shutdown.c
+      - sys/amd64/amd64/machdep\_minidump.c
+      - and rarely bits might be in sys/amd64/amd64/pmap.c
+
