@@ -889,7 +889,7 @@ research for this paper and can be found in the appendix.
 
 
 * Appendix
-** The Past: A History Complete of Core Dumps
+** The Past: A Complete History of Core Dumps
 
    The following sections list when different features of the core dump code were
    introduced starting with the core dump code itself. First the dump facility will
