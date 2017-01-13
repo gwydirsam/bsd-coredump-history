@@ -13,7 +13,7 @@
 
 This paper details the history, present state and some ideas for the future of
 the core dump routines in FreeBSD. The history follows FreeBSD back through BSD
-to 5th Edition Research UNIX.
+to 5th Edition Research UNIX. This project would have not been possible without [[https://github.com/dspinellis/unix-history-repo][unix-history-repo]].
 
 This started as a talk proposal to AsiaBSD Con 2017 and BSDCan 2017 about my
 wants in FreeBSD but the research got out of hand and became a complete history
