@@ -314,9 +314,9 @@ research for this paper and can be found in the appendix.
       5. Trailer
    6. End Dump
 
-   # this NULL byte claim needs verifcation
-   After this is done the kernel writes out a NULL byte to "Signal completion,
-   signoff and exit stage left." And our core dump is complete.
+   After this is done the kernel gives a zero length block to =dump_write()= to
+   "Signal completion, signoff and exit stage left." And our core dump is
+   complete.
 
 *** Full Core Dump Contents
     The canonical form of core dump is the "full dump". Full dumps are created
@@ -590,10 +590,10 @@ research for this paper and can be found in the appendix.
        7. Re-write Leader with correct size
     5. End Dump
 
-    If an error occurs during this procedure, report said error. If not,
-    write out a NULL byte to signifiy the end of the dump and report that the
-    dump suceeded.
-
+    If an error occurs during this procedure, report said error. If not, tell
+    =dump_write()= to write a zero-length block to signifiy the end of the dump
+    and report that the dump suceeded and return to executing the rest of the
+    machine independent dump code.
     
 **** Notes                                                         :noexport:
      - https://lists.freebsd.org/pipermail/freebsd-current/2007-December/081626.html

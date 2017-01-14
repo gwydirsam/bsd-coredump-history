@@ -185,9 +185,9 @@
      5. Trailer
   6. End Dump
 
-  After this is done the kernel writes out a NULL byte to “Signal
-  completion, signoff and exit stage left.” And our core dump is
-  complete.
+  After this is done the kernel gives a zero length block to
+  `dump_write()' to “Signal completion, signoff and exit stage left.”
+  And our core dump is complete.
 
 
 4.1.2 Full Core Dump Contents
@@ -365,8 +365,9 @@
   5. End Dump
 
   If an error occurs during this procedure, report said error. If not,
-  write out a NULL byte to signifiy the end of the dump and report that
-  the dump suceeded.
+  tell `dump_write()' to write a zero-length block to signifiy the end
+  of the dump and report that the dump suceeded and return to executing
+  the rest of the machine independent dump code.
 
 
 4.2 Core Dumps in Mac OS X
