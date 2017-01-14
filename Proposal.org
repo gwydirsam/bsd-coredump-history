@@ -1156,15 +1156,16 @@ research for this paper and can be found in the appendix.
    =minidumpsz= was created by Rodney W. Grimes for the author's work at
    Groupon and applies to FreeBSD 10.1 and FreeBSD 11. =minidumpsz= has not
    yet made it into upstream FreeBSD.
+*** Notes                                                          :noexport:
+**** Solaris dumpadm -e
+     - Solaris 11.2 has a similiar capability but is not limited to minidump, it
+       estimates based on your current config.
 
 ** Modularizing Dump Code (incomplete)
    - Backporting features and fixes added to dump code becomes trivial
    - Development becomes easier because LKMs are easier to work with
    - Embedded systems benifet from a smaller kernel
 *** Notes                                                          :noexport:
-**** Solaris dumpadm -e
-     - Solaris 11.2 has a similiar capability but is not limited to minidump, it
-       estimates based on your current config.
 **** Email from Rod Grimes
 #+BEGIN_QUOTE
 Delivered-To: sam@samgwydir.com
