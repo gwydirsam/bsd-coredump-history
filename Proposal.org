@@ -1076,8 +1076,8 @@ research for this paper and can be found in the appendix.
  FreeBSD 9.0, which did not succeed. 
 
  Currently there exists working netdump code from Isilon that can be applied
- with some difficulty to versions of FreeBSD after 11. Network dumps have not
- yet made it into upstream FreeBSD.
+ with some difficulty to versions of FreeBSD after 11.0. Network dumps
+ have not yet made it into upstream FreeBSD.
    
 
 *** Notes                                                          :noexport:
