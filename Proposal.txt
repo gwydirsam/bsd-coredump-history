@@ -373,8 +373,8 @@
   of being part of FreeBSD 9.0, which did not succeed.
 
   Currently there exists working netdump code from Isilon that can be
-  applied with some difficulty to versions of FreeBSD after 11. Network
-  dumps have not yet made it into upstream FreeBSD.
+  applied with some difficulty to versions of FreeBSD after 11.0.
+  Network dumps have not yet made it into upstream FreeBSD.
 
 
 5.2 Compressed Dump
@@ -413,12 +413,20 @@
   not yet made it into upstream FreeBSD.
 
 
-5.4 Modularizing Dump Code (incomplete)
-───────────────────────────────────────
+5.4 Modularizing Dump Code
+──────────────────────────
 
-  • Backporting features and fixes added to dump code becomes trivial
-  • Development becomes easier because LKMs are easier to work with
-  • Embedded systems benifet from a smaller kernel
+  Currently if one would like to implement features or fixes in the core
+  dump code one would need to recompile their kernel and reboot. This is
+  highly undesireable when an operator wants to upgrade or fix their
+  production systems. Refactoring the dump code into loadable kernel
+  modules (LKM) would yeild two major benifets for operators: easier
+  development of fixes and features and a smaller kernel for embedded
+  systems.
+
+  There is a proof of concept modularization of the dump code working on
+  FreeBSD 11.0p1[12]. This code has not yet made it into upstream
+  FreeBSD.
 
 
 5.5 Live Dump (incomplete)
@@ -806,3 +814,5 @@ McKusick, Neville-Neil, and Watson
 
 [11]
 [https://lists.freebsd.org/pipermail/freebsd-arch/2014-November/016231.html]
+
+[12] [https://people.freebsd.org/~rgrimes/]

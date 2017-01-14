@@ -1161,116 +1161,123 @@ research for this paper and can be found in the appendix.
      - Solaris 11.2 has a similiar capability but is not limited to minidump, it
        estimates based on your current config.
 
-** Modularizing Dump Code (incomplete)
+** Modularizing Dump Code
+   Currently if one would like to implement features or fixes in the core dump
+   code one would need to recompile their kernel and reboot. This is highly
+   undesireable when an operator wants to upgrade or fix their production
+   systems. Refactoring the dump code into loadable kernel modules (LKM) would  
+   yeild two major benifets for operators: easier development of fixes and
+   features and a smaller kernel for embedded systems.
+
+   There is a proof of concept modularization of the dump code working on
+   FreeBSD 11.0p1[fn:17]. This code has not yet made it into upstream FreeBSD.
+
+*** Notes                                                          :noexport:
    - Backporting features and fixes added to dump code becomes trivial
    - Development becomes easier because LKMs are easier to work with
    - Embedded systems benifet from a smaller kernel
-*** Notes                                                          :noexport:
 **** Email from Rod Grimes
-#+BEGIN_QUOTE
-Delivered-To: sam@samgwydir.com
-Received: by 10.157.36.51 with SMTP id p48csp2535444ota;
-        Thu, 12 Jan 2017 22:07:09 -0800 (PST)
-X-Received: by 10.99.126.27 with SMTP id z27mr21825681pgc.177.1484287629121;
-        Thu, 12 Jan 2017 22:07:09 -0800 (PST)
-Return-Path: <freebsd@pdx.rh.cn85.dnsmgr.net>
-Received: from pdx.rh.CN85.dnsmgr.net ([207.55.42.1])
-        by mx.google.com with ESMTPS id 96si3190182plz.28.2017.01.12.22.07.06
-        for <sam@samgwydir.com>
-        (version=TLS1 cipher=AES128-SHA bits=128/128);
-        Thu, 12 Jan 2017 22:07:08 -0800 (PST)
-Received-SPF: neutral (google.com: 207.55.42.1 is neither permitted nor denied by best guess record for domain of freebsd@pdx.rh.cn85.dnsmgr.net) client-ip=207.55.42.1;
-Authentication-Results: mx.google.com;
-       spf=neutral (google.com: 207.55.42.1 is neither permitted nor denied by best guess record for domain of freebsd@pdx.rh.cn85.dnsmgr.net) smtp.mailfrom=freebsd@pdx.rh.cn85.dnsmgr.net
-Received: from pdx.rh.CN85.dnsmgr.net (localhost [127.0.0.1]) by pdx.rh.CN85.dnsmgr.net (8.13.3/8.13.3) with ESMTP id v0D66v5s052225 for <sam@samgwydir.com>; Thu, 12 Jan 2017 22:06:57 -0800 (PST) (envelope-from freebsd@pdx.rh.CN85.dnsmgr.net)
-Received: (from freebsd@localhost) by pdx.rh.CN85.dnsmgr.net (8.13.3/8.13.3/Submit) id v0D66tiI052224 for sam@samgwydir.com; Thu, 12 Jan 2017 22:06:55 -0800 (PST) (envelope-from freebsd)
-From: "Rodney W. Grimes" <freebsd@pdx.rh.cn85.dnsmgr.net>
-Message-Id: <201701130606.v0D66tiI052224@pdx.rh.CN85.dnsmgr.net>
-Subject: Re: Modular Dump
-In-Reply-To: <CACddXfnSTgxUOLCVFkzjip9CRjxmqk83UbdQnB5XnGy8QVYW8Q@mail.gmail.com>
-To: Sam Gwydir <sam@samgwydir.com>
-Date: Thu, 12 Jan 2017 22:06:55 -0800 (PST)
-Reply-To: rgrimes@freebsd.org
-X-Mailer: ELM [version 2.4ME+ PL121h (25)]
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=US-ASCII
+     #+BEGIN_QUOTE
+     Delivered-To: sam@samgwydir.com
+     Received: by 10.157.36.51 with SMTP id p48csp2535444ota;
+     Thu, 12 Jan 2017 22:07:09 -0800 (PST)
+     X-Received: by 10.99.126.27 with SMTP id z27mr21825681pgc.177.1484287629121;
+     Thu, 12 Jan 2017 22:07:09 -0800 (PST)
+     Return-Path: <freebsd@pdx.rh.cn85.dnsmgr.net>
+     Received: from pdx.rh.CN85.dnsmgr.net ([207.55.42.1])
+     by mx.google.com with ESMTPS id 96si3190182plz.28.2017.01.12.22.07.06
+     for <sam@samgwydir.com>
+     (version=TLS1 cipher=AES128-SHA bits=128/128);
+     Thu, 12 Jan 2017 22:07:08 -0800 (PST)
+     Received-SPF: neutral (google.com: 207.55.42.1 is neither permitted nor denied by best guess record for domain of freebsd@pdx.rh.cn85.dnsmgr.net) client-ip=207.55.42.1;
+     Authentication-Results: mx.google.com;
+     spf=neutral (google.com: 207.55.42.1 is neither permitted nor denied by best guess record for domain of freebsd@pdx.rh.cn85.dnsmgr.net) smtp.mailfrom=freebsd@pdx.rh.cn85.dnsmgr.net
+     Received: from pdx.rh.CN85.dnsmgr.net (localhost [127.0.0.1]) by pdx.rh.CN85.dnsmgr.net (8.13.3/8.13.3) with ESMTP id v0D66v5s052225 for <sam@samgwydir.com>; Thu, 12 Jan 2017 22:06:57 -0800 (PST) (envelope-from freebsd@pdx.rh.CN85.dnsmgr.net)
+     Received: (from freebsd@localhost) by pdx.rh.CN85.dnsmgr.net (8.13.3/8.13.3/Submit) id v0D66tiI052224 for sam@samgwydir.com; Thu, 12 Jan 2017 22:06:55 -0800 (PST) (envelope-from freebsd)
+     From: "Rodney W. Grimes" <freebsd@pdx.rh.cn85.dnsmgr.net>
+     Message-Id: <201701130606.v0D66tiI052224@pdx.rh.CN85.dnsmgr.net>
+     Subject: Re: Modular Dump
+     In-Reply-To: <CACddXfnSTgxUOLCVFkzjip9CRjxmqk83UbdQnB5XnGy8QVYW8Q@mail.gmail.com>
+     To: Sam Gwydir <sam@samgwydir.com>
+     Date: Thu, 12 Jan 2017 22:06:55 -0800 (PST)
+     Reply-To: rgrimes@freebsd.org
+     X-Mailer: ELM [version 2.4ME+ PL121h (25)]
+     MIME-Version: 1.0
+     Content-Transfer-Encoding: 7bit
+     Content-Type: text/plain; charset=US-ASCII
 
-> On Thu, Jan 12, 2017 at 11:03 PM, Rodney W. Grimes
-> <freebsd@pdx.rh.cn85.dnsmgr.net> wrote:
-> >> Hey Rod,
-> >>
-> >> Finishing up my paper on core dumps and wanted to talk about your idea for
-> >> modularization of the dump code.
-> >
-> > Is there a copy of it some place to read?  (Please don't email it, as that
-> > tends to clutter my mail folder.)
-> 
-> Here you go: https://github.com/gwydirsam/bsd-coredump-history
-> 
-> The pdf is compiled from the org file. The org file contains notes but
-> may be hard to read without emacs and org-mode.
+     > On Thu, Jan 12, 2017 at 11:03 PM, Rodney W. Grimes
+     > <freebsd@pdx.rh.cn85.dnsmgr.net> wrote:
+     > >> Hey Rod,
+     > >>
+     > >> Finishing up my paper on core dumps and wanted to talk about your idea for
+     > >> modularization of the dump code.
+     > >
+     > > Is there a copy of it some place to read?  (Please don't email it, as that
+     > > tends to clutter my mail folder.)
+     > 
+     > Here you go: https://github.com/gwydirsam/bsd-coredump-history
+     > 
+     > The pdf is compiled from the org file. The org file contains notes but
+     > may be hard to read without emacs and org-mode.
 
-No emacs for me, so I'll be reading the pdf.
+     No emacs for me, so I'll be reading the pdf.
 
-> The history is now an appendix because it is just a huge list. I'm not
-> 100% on some of the architecture support claims, in particular I'm not
-> familiar enough with VAX to nail down that period. In addition there
-> are some important features and bug fixes I'm sure I missed in the
-> FreeBSD history because I didn't go through all minor versions.
-> 
-> If there's anything you have to comment on let me know. Thanks for
-> taking a look.
+     > The history is now an appendix because it is just a huge list. I'm not
+     > 100% on some of the architecture support claims, in particular I'm not
+     > familiar enough with VAX to nail down that period. In addition there
+     > are some important features and bug fixes I'm sure I missed in the
+     > FreeBSD history because I didn't go through all minor versions.
+     > 
+     > If there's anything you have to comment on let me know. Thanks for
+     > taking a look.
 
-I'll make time to at least give it one fast pass.
+     I'll make time to at least give it one fast pass.
 
-> >> I want to talk about why FreeBSD should go
-> >> in this direction and what are the pros and cons of a modular dump code?
-> >
-> > There are 2 major reasons I want to go in this direction, and think that
-> > these reasons are benificial to the FreeBSD project and its users.
-> >
-> > 1)  By moving all the dump code to Loadable Kernel Modules (LKM) it
-> >     makes this code easier to work on and enhance with new features.
-> >     I actually did this for the netdump code so that I didnt have
-> >     to go through reboot cycles while I debugged it.  I could simply
-> >     load the module, test it, unload it, edit, compile, repeat.
-> >
-> > 2)  I am active in the embeded world of small computers, and dump
-> >     code is a debug tool in that world that needs ripped out after
-> >     your done with developement.  Your embeded system isnt going
-> >     to do a core dump that anyone would ever see.  This shaves
-> >     a tiny amount of the size of the kernel, another important
-> >     thing in the embeded world.
-> 
-> Sounds good to me. Do you think it would take a large effort to
-> modularize all the dump code?
+     > >> I want to talk about why FreeBSD should go
+     > >> in this direction and what are the pros and cons of a modular dump code?
+     > >
+     > > There are 2 major reasons I want to go in this direction, and think that
+     > > these reasons are benificial to the FreeBSD project and its users.
+     > >
+     > > 1)  By moving all the dump code to Loadable Kernel Modules (LKM) it
+     > >     makes this code easier to work on and enhance with new features.
+     > >     I actually did this for the netdump code so that I didnt have
+     > >     to go through reboot cycles while I debugged it.  I could simply
+     > >     load the module, test it, unload it, edit, compile, repeat.
+     > >
+     > > 2)  I am active in the embeded world of small computers, and dump
+     > >     code is a debug tool in that world that needs ripped out after
+     > >     your done with developement.  Your embeded system isnt going
+     > >     to do a core dump that anyone would ever see.  This shaves
+     > >     a tiny amount of the size of the kernel, another important
+     > >     thing in the embeded world.
+     > 
+     > Sounds good to me. Do you think it would take a large effort to
+     > modularize all the dump code?
 
-No, I already have a working model, and have glanced at the crypted
-dump that just went in the tree, and do not see any thing taking very
-much effort at all.
+     No, I already have a working model, and have glanced at the crypted
+     dump that just went in the tree, and do not see any thing taking very
+     much effort at all.
 
-> Would each architecture need it's own
-> module for the machine dependent parts?
+     > Would each architecture need it's own
+     > module for the machine dependent parts?
 
-The machine dependent part is tiny, most of it living in the pmap
-code.  At present there is a large amount of duplicated code accross
-the different architectures in the MD part, telling me since the
-code is duplicated almost to the last character that a refactor
-would move 95% of that code to MI, so 5% of what is already tiny
-would be left behind. 
+     The machine dependent part is tiny, most of it living in the pmap
+     code.  At present there is a large amount of duplicated code accross
+     the different architectures in the MD part, telling me since the
+     code is duplicated almost to the last character that a refactor
+     would move 95% of that code to MI, so 5% of what is already tiny
+     would be left behind. 
 
-Realize that each architecture has to have its own module for the MI
-part since your aarch64 arm isnt going to run the amd64 code!
+     Realize that each architecture has to have its own module for the MI
+     part since your aarch64 arm isnt going to run the amd64 code!
 
-> Thanks for your time. Will you be attending BSDCan?
-I have 7 days left to get a topic submitted, but I do plan to
-attend one way or another (I could probalby get a travel grant
-from the foundation if I didnt get accepted for a paper.)
+     ...
 
--- 
-Rod Grimes                                                 rgrimes@freebsd.org
-#+END_QUOTE
+     -- 
+     Rod Grimes                                                 rgrimes@freebsd.org
+     #+END_QUOTE
 
 ** Live Dump (incomplete)
    - Solaris has this. 
@@ -2350,6 +2357,8 @@ Differential Revision:	https://reviews.freebsd.org/D5848
 
 
 * Footnotes
+
+[fn:17] https://people.freebsd.org/~rgrimes/
 
 [fn:16] https://opensource.apple.com/source/network_cmds/network_cmds-396.6/kdumpd.tproj/kdumpd.8.auto.html
 

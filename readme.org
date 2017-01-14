@@ -58,7 +58,8 @@ research for this paper and can be found in the appendix.
   - It does have a ton of features I want in FreeBSD
 ** TODO Add Illumos
    - Could possibly replace Solaris section
-** TODO Finish Modularization of Core Dump Code section
+** DONE Finish Modularization of Core Dump Code section
+   CLOSED: [2017-01-14 Sat 11:22]
 ** TODO minidumpsz code needs publishing so I can reference it
 ** TODO Finish Conclusion
 ** TODO Submit Finished Paper to AsiaBSD Con 2017
