@@ -51,7 +51,8 @@ research for this paper and can be found in the appendix.
 
 * 'TODO' list
 ** TODO Clean up notes
-** TODO Finish Textdump Procedure and Contents
+** DONE Finish Textdump Procedure and Contents
+   CLOSED: [2017-01-14 Sat 14:11]
 ** TODO Revise the details of the minidump procedure
 ** TODO Add Solaris? 
   - Does this make sense (it's no longer BSD based)?

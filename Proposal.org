@@ -331,7 +331,7 @@ research for this paper and can be found in the appendix.
     |---+-----------------+-----------------------------|
     |   | Field           | Description                 |
     |---+-----------------+-----------------------------|
-    | / | >              | <                          |
+    | / | >               | <                           |
     |   | Leader          | See Table [[tab:kdhheader]] |
     |   | ELF Header      | See Table [[tab:elfheader]] |
     |   | Program Headers |                             |
@@ -341,27 +341,27 @@ research for this paper and can be found in the appendix.
 
     #+CAPTION: =kerneldumpheader= Format
     #+NAME:   tab:kdhheader
-    |---+-----------------------+----------------------------|
-    |   | Field                 | Value                      |
-    |---+-----------------------+----------------------------|
-    | / | >                     | <                          |
-    |   | =magic=               | "FreeBSD Kernel Dump"      |
-    |   | =architecture=        | "amd64"                    |
-    |   | =version=             | 1 (kdh format version)     |
-    |   | =architectureversion= | 2                          |
+    |---+-----------------------+--------------------------|
+    |   | Field                 | Value                    |
+    |---+-----------------------+--------------------------|
+    | / | >                     | <                        |
+    |   | =magic=               | "FreeBSD Kernel Dump"    |
+    |   | =architecture=        | "amd64"                  |
+    |   | =version=             | 1 (kdh format version)   |
+    |   | =architectureversion= | 2                        |
     |   | =dumplength=          | varies, excludes headers |
-    |   | =dumptime=            | current time               |
-    |   | =blocksize=           | block size                 |
-    |   | =hostname=            | hostname                   |
-    |   | =versionstring=       | version of OS              |
-    |   | =panicstring=         | =panic(9)= message |
-    |   | =parity=              | parity bits                |
-    |---+-----------------------+----------------------------|
+    |   | =dumptime=            | current time             |
+    |   | =blocksize=           | block size               |
+    |   | =hostname=            | hostname                 |
+    |   | =versionstring=       | version of OS            |
+    |   | =panicstring=         | =panic(9)= message       |
+    |   | =parity=              | parity bits              |
+    |---+-----------------------+--------------------------|
 
     #+CAPTION: =ehdr= ELF Header Format
     #+NAME:   tab:elfheader
  |---+-----------------------+------------------------|
- |   | Field          | Value                  |
+ |   | Field                 | Value                  |
  |---+-----------------------+------------------------|
  | / | >                     | <                      |
  |   | =e_ident[EI_MAG0]=    | =0x7f=                 |
@@ -543,6 +543,57 @@ research for this paper and can be found in the appendix.
      #+END_QUOTE
     
 *** Textdump Procedure and Contents
+    FreeBSD added a new type of dump, the =textdump(4)=. ``The textdump facility
+    allows the capture of kernel debugging information to disk in a
+    human-readable rather than the machine-readable form normally used with
+    kernel memory dumps and minidumps.''[fn:18] If =doadump()= in
+    =kern_shutdown.c= is given a boolean value of 'true' then a minidump or full
+    dump is cancelled and instead =textdump_dumpsys()= is invoked in
+    =sys/ddb/db_textdump.c=.
+
+    Since textdumps are not binary data, textdumps are written out in the ustar
+    tar file format. This tar contains several files listed in
+    [[tab:textdumpformat]][fn:19]. There exist several sysctls to select which
+    files an operator wishes to include. These are listed in =textdump(4)=.
+
+    #+CAPTION: =textdump(4)= Format
+    #+NAME:   tab:textdumpformat
+    |---+---------------+-----------------------------|
+    |   | File          | Description                 |
+    |---+---------------+-----------------------------|
+    | / | >             | <                           |
+    |   | Leader        | See Table [[tab:kdhheader]] |
+    |   | =ddb.txt=     | Captured DDB output         |
+    |   | =config.txt=  | Kernel configuration        |
+    |   | =msgbuf.txt=  | Kernel message buffer       |
+    |   | =panic.txt=   | Kernel panic message        |
+    |   | =version.txt= | Kernel version string       |
+    |   | Trailer       | See Table [[tab:kdhheader]] |
+    |---+---------------+-----------------------------|
+
+    The =textdump(4)= procedure is similar in it's setup to the other types of
+    dumps but has several differences in particular because the dump is in ustar
+    format instead of a binary format.
+
+    1. Check if minimum amount of space is available on dump device
+    2. Set start of dump at the end of the swap partition minus the size of the
+       dump header
+    3. Fill in kernel dump header
+    4. Begin Dump
+       1. Leader
+       2. ddb.txt
+       3. config.txt
+       4. msgbuf.txt
+       5. panic.txt
+       6. version.txt
+       7. Trailer
+       7. Re-write Leader with correct size
+    5. End Dump
+
+    If an error occurs during this procedure, report said error. If not,
+    write out a NULL byte to signifiy the end of the dump and report that the
+    dump suceeded.
+
     
 **** Notes                                                         :noexport:
      - https://lists.freebsd.org/pipermail/freebsd-current/2007-December/081626.html
@@ -2357,6 +2408,10 @@ Differential Revision:	https://reviews.freebsd.org/D5848
 
 
 * Footnotes
+
+[fn:19] https://lists.freebsd.org/pipermail/freebsd-current/2007-December/081626.html
+
+[fn:18] https://www.freebsd.org/cgi/man.cgi?query=textdump&apropos=0&sektion=0&manpath=FreeBSD+11.0-RELEASE+and+Ports&arch=default&format=html
 
 [fn:17] https://people.freebsd.org/~rgrimes/
 
