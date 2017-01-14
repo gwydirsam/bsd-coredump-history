@@ -18,6 +18,7 @@
 #+KEYWORDS:
 #+SUBTITLE:
 
+
 #+BEGIN_COMMENT
 -Questions
 
@@ -356,38 +357,6 @@ research for this paper and can be found in the appendix.
     |   | =panicstring=         | =panic(9)= message |
     |   | =parity=              | parity bits                |
     |---+-----------------------+----------------------------|
-    # |---+---------------------|-----------------------------------|
-    # |   | Field               | Value                             |
-    # |---+---------------------|-----------------------------------|
-    # | / | <>                  |                                   |
-    # |   | magic               | "FreeBSD Kernel Dump"             |
-    # |   | architecture        | "amd64"                           |
-    # |   | version             | 1 (version of kernel dump format) |
-    # |   | architectureversion | 2                                 |
-    # |   | dumplength          | (varies, excluding headers)        |
-    # |   | dumptime            | (current time)                     |
-    # |   | blocksize           | (block size)                       |
-    # |   | hostname            | (hostname)                         |
-    # |   | versionstring       |                                   |
-    # |   | panicstring         |                                   |
-    # |   | parity              | (parity bits)                      |
-    # |---+---------------------|-----------------------------------|
-    # |---+---------------------|
-    # |   | Field               |
-    # |---+---------------------|
-    # | / | <>                  |
-    # |   | magic               |
-    # |   | architecture        |
-    # |   | version             |
-    # |   | architectureversion |
-    # |   | dumplength          |
-    # |   | dumptime            |
-    # |   | blocksize           |
-    # |   | hostname            |
-    # |   | versionstring       |
-    # |   | panicstring         |
-    # |   | parity              |
-    # |---+---------------------|
 
     #+CAPTION: =ehdr= ELF Header Format
     #+NAME:   tab:elfheader
@@ -462,8 +431,8 @@ research for this paper and can be found in the appendix.
   | / | >                     | <                                |
   |   | Leader                | See Table [[tab:kdhheader]]      |
   |   | Minidump Header       | See Table [[tab:minidumpheader]] |
-  |   | Message Buffer        | (message buffer contents) |
-  |   | Bitmap                | (map of kernel pages in pmap)    |
+  |   | Message Buffer        | message buffer contents |
+  |   | Bitmap                | map of kernel pages in pmap    |
   |   | Kernel Page Directory |                                  |
   |   | Memory Chunks         |                                  |
   |   | Trailer               | See Table [[tab:kdhheader]]      |
@@ -471,19 +440,19 @@ research for this paper and can be found in the appendix.
 
   #+CAPTION: =minidumphdr= Format
   #+NAME:   tab:minidumpheader
-  |---+---------------------+-------------------------------|
-  |   | Field | Value                         |
-  |---+---------------------+-------------------------------|
-  | / | >                   | <                             |
-  |   | =magic=             | ``minidump FreeBSD/amd64''    |
-  |   | =version=           | 2                             |
-  |   | =msgbufsize=        | (size of message buffer) |
-  |   | =bitmapsize=        | (size of bitmap)              |
-  |   | =pmapsize=          | (size of physical memory map) |
-  |   | =kernbase=          | (ptr to start of kernel mem)  |
-  |   | =dmapbase=          | (ptr to start of direct map)  |
-  |   | =dmapend=           | (ptr to end of direct map)    |
-  |---+---------------------+-------------------------------|
+  |---+--------------+-------------------------------|
+  |   | Field        | Value                         |
+  |---+--------------+-------------------------------|
+  | / | >            | <                             |
+  |   | =magic=      | ``minidump FreeBSD/amd64''    |
+  |   | =version=    | 2                             |
+  |   | =msgbufsize= | size of message buffer      |
+  |   | =bitmapsize= | size of bitmap              |
+  |   | =pmapsize=   | size of physical memory map |
+  |   | =kernbase=   | ptr to start of kernel mem  |
+  |   | =dmapbase=   | ptr to start of direct map  |
+  |   | =dmapend=    | ptr to end of direct map    |
+  |---+--------------+-------------------------------|
 
   The minidump procedure in general is similiar to that of the full dump but
   with the added step of creating a bitmap that indicates which pages are to
@@ -574,7 +543,7 @@ research for this paper and can be found in the appendix.
      #+END_QUOTE
     
 *** Textdump Procedure and Contents
-
+    
 **** Notes                                                         :noexport:
      - https://lists.freebsd.org/pipermail/freebsd-current/2007-December/081626.html
      - texdump email
@@ -1106,12 +1075,44 @@ research for this paper and can be found in the appendix.
  modern FreeBSD in 2010 at Sandvine with the intention of being part of
  FreeBSD 9.0, which did not succeed. 
 
- Currently there exists working netdump code at Isilon that applies cleanly to
- versions of FreeBSD after 11 but before encrypted dump was added in FreeBSD
- 12-CURRENT. Network dumps have not yet made it into upstream FreeBSD.
+ Currently there exists working netdump code from Isilon that can be applied
+ with some difficulty to versions of FreeBSD after 11. Network dumps have not
+ yet made it into upstream FreeBSD.
    
 
 *** Notes                                                          :noexport:
+   - Rodney Grimes Email
+
+     #+BEGIN_QUOTE
+     > On Thu, Jan 12, 2017 at 11:03 PM, Rodney W. Grimes
+     > <freebsd@pdx.rh.cn85.dnsmgr.net> wrote:
+     > >> Hey Rod,
+     > >>
+     > >> Finishing up my paper on core dumps and wanted to talk about your idea for
+     > >> modularization of the dump code.
+     > >
+     > > Is there a copy of it some place to read?  (Please don't email it, as that
+     > > tends to clutter my mail folder.)
+     >
+     > Here you go: https://github.com/gwydirsam/bsd-coredump-history
+
+     1:
+     "code at Isilon that applies cleanly to versions of
+     FreeBSD after 11 but before"
+
+     The patch does not apply cleanly, it took me many hours of hand
+     editing in applying the Isilon diff.
+
+     2:
+     "8.4.1 FreeBSD 1.0
+
+     i386 support, hp300 support from 386BSD-0.1-patchkit"
+
+     I do not think any version of FreeBSD ever had support for hp300.
+
+
+     Wow, 2 nits in all that writting, good job!
+     #+END_QUOTE
    - Netdumps
      - Duke University code from long ago
      - Picked up by Ed Maste at Sandvine, dropped
@@ -1710,11 +1711,40 @@ dumpstack:
 ** Core Dumps in FreeBSD
 *** FreeBSD 1.0
 # **** FreeBSD 1.0
-     - i386 support, hp300 support from 386BSD-0.1-patchkit
+     - i386 support from 386BSD-0.1-patchkit
 **** FreeBSD 1.1                                                   :noexport:
 **** FreeBSD 1.1.5                                                 :noexport:
 ***** Notes                                                        :noexport:
-      hp300 and is back?
+     #+BEGIN_QUOTE
+     > On Thu, Jan 12, 2017 at 11:03 PM, Rodney W. Grimes
+     > <freebsd@pdx.rh.cn85.dnsmgr.net> wrote:
+     > >> Hey Rod,
+     > >>
+     > >> Finishing up my paper on core dumps and wanted to talk about your idea for
+     > >> modularization of the dump code.
+     > >
+     > > Is there a copy of it some place to read?  (Please don't email it, as that
+     > > tends to clutter my mail folder.)
+     >
+     > Here you go: https://github.com/gwydirsam/bsd-coredump-history
+
+     1:
+     "code at Isilon that applies cleanly to versions of
+     FreeBSD after 11 but before"
+
+     The patch does not apply cleanly, it took me many hours of hand
+     editing in applying the Isilon diff.
+
+     2:
+     "8.4.1 FreeBSD 1.0
+
+     i386 support, hp300 support from 386BSD-0.1-patchkit"
+
+     I do not think any version of FreeBSD ever had support for hp300.
+
+
+     Wow, 2 nits in all that writting, good job!
+     #+END_QUOTE
 *** FreeBSD 2.0.0 
 **** FreeBSD 2.0.0 
      - =doadump()= no longer exists, though is mentioned in comments. 

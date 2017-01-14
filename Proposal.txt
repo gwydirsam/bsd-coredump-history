@@ -261,31 +261,31 @@
   Minidumps use a custom format in lieu of ELF. The format of a modern
   minidump (version 2) can be found in table 4.
 
-  ━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   Field                 │ Description                   
-  ───────────────────────┼───────────────────────────────
-   Leader                │ See Table 2                   
-   Minidump Header       │ See Table 5                   
-   Message Buffer        │ (message buffer contents)     
-   Bitmap                │ (map of kernel pages in pmap) 
-   Kernel Page Directory │                               
-   Memory Chunks         │                               
-   Trailer               │ See Table 2                   
-  ━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Field                 │ Description                 
+  ───────────────────────┼─────────────────────────────
+   Leader                │ See Table 2                 
+   Minidump Header       │ See Table 5                 
+   Message Buffer        │ message buffer contents     
+   Bitmap                │ map of kernel pages in pmap 
+   Kernel Page Directory │                             
+   Memory Chunks         │                             
+   Trailer               │ See Table 2                 
+  ━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   Table 4: Mini Dump Format
 
-  ━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   Field        │ Value                         
-  ──────────────┼───────────────────────────────
-   `magic'      │ ``minidump FreeBSD/amd64’’    
-   `version'    │ 2                             
-   `msgbufsize' │ (size of message buffer)      
-   `bitmapsize' │ (size of bitmap)              
-   `pmapsize'   │ (size of physical memory map) 
-   `kernbase'   │ (ptr to start of kernel mem)  
-   `dmapbase'   │ (ptr to start of direct map)  
-   `dmapend'    │ (ptr to end of direct map)    
-  ━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Field        │ Value                       
+  ──────────────┼─────────────────────────────
+   `magic'      │ ``minidump FreeBSD/amd64’’  
+   `version'    │ 2                           
+   `msgbufsize' │ size of message buffer      
+   `bitmapsize' │ size of bitmap              
+   `pmapsize'   │ size of physical memory map 
+   `kernbase'   │ ptr to start of kernel mem  
+   `dmapbase'   │ ptr to start of direct map  
+   `dmapend'    │ ptr to end of direct map    
+  ━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   Table 5: `minidumphdr' Format
 
   The minidump procedure in general is similiar to that of the full dump
@@ -372,10 +372,9 @@
   later ported to modern FreeBSD in 2010 at Sandvine with the intention
   of being part of FreeBSD 9.0, which did not succeed.
 
-  Currently there exists working netdump code at Isilon that applies
-  cleanly to versions of FreeBSD after 11 but before encrypted dump was
-  added in FreeBSD 12-CURRENT. Network dumps have not yet made it into
-  upstream FreeBSD.
+  Currently there exists working netdump code from Isilon that can be
+  applied with some difficulty to versions of FreeBSD after 11. Network
+  dumps have not yet made it into upstream FreeBSD.
 
 
 5.2 Compressed Dump
@@ -647,7 +646,7 @@
 8.4.1 FreeBSD 1.0
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
-  • i386 support, hp300 support from 386BSD-0.1-patchkit
+  • i386 support from 386BSD-0.1-patchkit
 
 
 8.4.2 FreeBSD 2.0.0
