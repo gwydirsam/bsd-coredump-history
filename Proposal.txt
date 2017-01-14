@@ -261,17 +261,17 @@
   Minidumps use a custom format in lieu of ELF. The format of a modern
   minidump (version 2) can be found in table 4.
 
-  ━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   Field                 │ Description                 
-  ───────────────────────┼─────────────────────────────
-   Leader                │ See Table 2                 
-   Minidump Header       │ See Table 5                 
-   Message Buffer        │ message buffer contents     
-   Bitmap                │ map of kernel pages in pmap 
-   Kernel Page Directory │                             
-   Memory Chunks         │                             
-   Trailer               │ See Table 2                 
-  ━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━
+   Field                 │ Description             
+  ───────────────────────┼─────────────────────────
+   Leader                │ See Table 2             
+   Minidump Header       │ See Table 5             
+   Message Buffer        │ message buffer contents 
+   Bitmap                │ map of kernel pages     
+   Kernel Page Directory │                         
+   Memory Chunks         │                         
+   Trailer               │ See Table 2             
+  ━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━
   Table 4: Mini Dump Format
 
   ━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -347,21 +347,22 @@
 
   The `textdump(4)' procedure is similar in it’s setup to the other
   types of dumps but has several differences in particular because the
-  dump is in ustar format instead of a binary format.
+  dump is in ustar format containing several text files instead of a
+  binary format containing kernel pages.
 
   1. Check if minimum amount of space is available on dump device
   2. Set start of dump at the end of the swap partition minus the size
      of the dump header
   3. Fill in kernel dump header
   4. Begin Dump
-     1. Leader
+     1. Trailer
      2. ddb.txt
      3. config.txt
      4. msgbuf.txt
      5. panic.txt
      6. version.txt
-     7. Trailer
-     8. Re-write Leader with correct size
+     7. Header
+     8. Re-write Trailer with correct size
   5. End Dump
 
   If an error occurs during this procedure, report said error. If not,
@@ -373,29 +374,40 @@
 4.2 Core Dumps in Mac OS X
 ──────────────────────────
 
-  Mac OS X is capable of creating gzipped core dumps and dumping
-  locally, or over the network using a modified `tftpd(8)' daemon they
-  call `kdumpd(8)'. In addition dumps over FireWire are supported for
-  situations where the kernel panic is caused by the Ethernet driver or
-  network code.
-
+  Mac OS X is capable of creating compressed core dumps and dumping them
+  locally, or over the network using a modified `tftpd(8)' from FreeBSD
+  called `kdumpd(8)'[12]. Network dumping “has been present since Mac OS
+  X 10.3 for PowerPC-based Macintosh systems, and since Mac OS X 10.4.7
+  for Intel-based Macintosh systems.”[4] In addition dumps over FireWire
+  are supported for situations where the kernel panic is caused by the
+  Ethernet driver or network code.
 
   In `xnu/osfmk/kdp/kdp_core.c' Mac OS X gzips its’ core dump before
   writing it out to disk, and is otherwise much like the FreeBSD “full
-  dump” procedure with one major difference. Notably, Mac OS X uses a
-  different executable image-format called Mach-O, as opposed to ELF,
-  because OS X runs a hybrid Mach and BSD kernel called XNU.
+  dump” procedure with one major difference besides its’ features[13].
+  Notably, Mac OS X uses a different executable image-format called
+  Mach-O, as opposed to ELF, because OS X runs a hybrid Mach and BSD
+  kernel called XNU[14].
 
-  Network dumping “has been present since Mac OS X 10.3 for
-  PowerPC-based Macintosh systems, and since Mac OS X 10.4.7 for
-  Intel-based Macintosh systems.”[4] From `kdumpd(8)'[12]:
-        Kdumpd is a server which receives kernel states in the
-        form of a core dump from a remote Mac OS X machine.
+  1. Initialize gzip
+  2. Determine where to write dump
+     1. If local, determine offset
+     2. If remote, setup buffer for compressed core and packet size
+  3. Traverse the pmap for dumpable pages
+  4. Fill in Mach-O header
+  5. Begin Dump Write/Transmission
+     1. Mach-O Header
+     2. Information about panicked thread’s state
+     3. Information about dump output location
+     4. Pad with zeroes to page align
+     5. Kernel Pages
+     6. Signal Completion with zero length write
+     7. Print out Information about Dump
+     8. If Local, write out debug log and gzip file header
+  6. End Dump Write/Transmission
 
-        …
-
-        The kdumpd command is based on Berkeley tftpd(8) by way of
-        FreeBSD, with several modifications.
+  If an error is detected at any point, return and report the given
+  error message.
 
 
 5 The Future
@@ -440,7 +452,7 @@
   remains uncompressed.
 
   Compressed dumps see a 6 to 14 compression ratio for core dumps with a
-  slight penalty in the time require to write the dump initially[13].
+  slight penalty in the time require to write the dump initially[15].
   However the following `savecore(8)' on the next boot is faster,
   resulting in a faster dump and reboot sequence.
 
@@ -475,7 +487,7 @@
   systems.
 
   There is a proof of concept modularization of the dump code working on
-  FreeBSD 11.0p1[14]. This code has not yet made it into upstream
+  FreeBSD 11.0p1[16]. This code has not yet made it into upstream
   FreeBSD.
 
 
@@ -869,6 +881,11 @@ McKusick, Neville-Neil, and Watson
 [https://opensource.apple.com/source/network_cmds/network_cmds-396.6/kdumpd.tproj/kdumpd.8.auto.html]
 
 [13]
+[https://github.com/opensource-apple/xnu/blob/27ffc00f33925b582391b1ef318b78b8bd3939d1/osfmk/kdp/kdp_core.c#L527]
+
+[14] [https://en.wikipedia.org/wiki/Core_dump]
+
+[15]
 [https://lists.freebsd.org/pipermail/freebsd-arch/2014-November/016231.html]
 
-[14] [https://people.freebsd.org/~rgrimes/]
+[16] [https://people.freebsd.org/~rgrimes/]
