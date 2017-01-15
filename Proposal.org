@@ -1092,7 +1092,7 @@ research for this paper and can be found in the appendix.
     #+END_SRC
   Not yet done.
 
-** Core Dumps in Solaris (incomplete)                              :noexport:
+** Core Dumps in Solaris (Not in Scope)                            :noexport:
    Solaris has several features that others don't. But Solaris is arguably not
    within the scope of this paper. Detailing Illmos' abilities instead.
    - =savecore(1M)= has the ability to ``live dump'', creating a dump of a
@@ -1101,6 +1101,7 @@ research for this paper and can be found in the appendix.
    - =dumpadm(1M)= allows save compression and dumping to swap on zvol(!!!)
    - =dumpadm(1M)= as of Solaris 11.2 has a dump size estimation feature that will attempt to
      estimate the size of a dump given your current configuration.
+     - Illumos has this. Just going to do an illumos section instead
    
 *** Notes                                                          :noexport:
     - Solaris docs 
@@ -1112,8 +1113,33 @@ research for this paper and can be found in the appendix.
         - https://docs.oracle.com/cd/E23824_01/html/821-1448/ggrln.html
       - dumpadm(1m) for -e estimation (since solaris 11.2)
         - https://docs.oracle.com/cd/E53394_01/html/E54764/dumpadm-1m.html
-** Core Dumps in Illumos (incomplete)                              :noexport:
+** Core Dumps in Illumos
+   ``illumos is a free and open-source Unix operating system. It derives from
+   OpenSolaris, which in turn derives from SVR4 UNIX and Berkeley Software
+   Distribution (BSD).''[fn:20] Illumos has several attractive features in it's
+   core dump routine including ``live dumping'', compression and support for
+   swap on zvol as a dump device.
+
+   The Illumos dump routine, =dumpsys()= can be found in
+   =usr/sys/uts/common/os/dumpsubr.c=. In contrast to the other dump routines
+   explained previously, the Illumos dump routine is very complex but with that
+   complexity comes several features that are not available elsewhere.
+
+   Illumos' =savecore(1M)= has the ability to ``live dump'', creating a dump of
+   a running system[fn:22]. =savecore(1M)= does note that this dump will not be
+   entirely self consistent because the machine is not suspended while dumping.
+   
+   In addition Illumos has a tool like FreeBSD's =dumpon(8)= called
+   =dumpadm(1M)= which can set set the current dump device, which in addition to
+   supporting compression, is able to dump to a swap partition on a ZFS zvol.
+   =dumpadm(1M)= is also able to estimate the size of a dump on a running
+   system[fn:21].
+   
 *** Notes                                                          :noexport:
+    - =dumpadm(1M)=
+      - https://illumos.org/man/1m/dumpadm
+    - =savecore(1M)=
+      - https://illumos.org/man/1m/savecore
 * The Future
   There are several extensions to the FreeBSD core dump code that exist as sets
   of patches on mailing lists and wikis but are not found in upstream FreeBSD.
@@ -2415,7 +2441,11 @@ Differential Revision:	https://reviews.freebsd.org/D5848
 
 * Footnotes
 
-[fn:20] https://github.com/opensource-apple/xnu/blob/27ffc00f33925b582391b1ef318b78b8bd3939d1/osfmk/kdp/kdp_core.c#L527
+[fn:22] https://illumos.org/man/1m/savecore
+
+[fn:21] https://illumos.org/man/1m/dumpadm
+
+[fn:20] https://en.wikipedia.org/wiki/Illumos
 
 [fn:19] https://lists.freebsd.org/pipermail/freebsd-current/2007-December/081626.html
 

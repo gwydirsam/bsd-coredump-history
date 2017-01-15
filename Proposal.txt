@@ -384,14 +384,15 @@
 
   In `xnu/osfmk/kdp/kdp_core.c' Mac OS X gzips its’ core dump before
   writing it out to disk, and is otherwise much like the FreeBSD “full
-  dump” procedure with one major difference besides its’ features[13].
+  dump” procedure with one major difference besides its’ features[5].
   Notably, Mac OS X uses a different executable image-format called
   Mach-O, as opposed to ELF, because OS X runs a hybrid Mach and BSD
-  kernel called XNU[14].
+  kernel called XNU[13].
 
   1. Initialize gzip
   2. Determine where to write dump
-     1. If local, determine offset
+     1. If local, determine offset to place file header, panic and core
+        log
      2. If remote, setup buffer for compressed core and packet size
   3. Traverse the pmap for dumpable pages
   4. Fill in Mach-O header
@@ -408,6 +409,33 @@
 
   If an error is detected at any point, return and report the given
   error message.
+
+
+4.3 Core Dumps in Illumos
+─────────────────────────
+
+  ``illumos is a free and open-source Unix operating system. It derives
+  from OpenSolaris, which in turn derives from SVR4 UNIX and Berkeley
+  Software Distribution (BSD).’’[14] Illumos has several attractive
+  features in it’s core dump routine including ``live dumping’’,
+  compression and support for swap on zvol as a dump device.
+
+  The Illumos dump routine, `dumpsys()' can be found in
+  `usr/sys/uts/common/os/dumpsubr.c'. In contrast to the other dump
+  routines explained previously, the Illumos dump routine is very
+  complex but with that complexity comes several features that are not
+  available elsewhere.
+
+  Illumos’ `savecore(1M)' has the ability to ``live dump’’, creating a
+  dump of a running system[15]. `savecore(1M)' does note that this dump
+  will not be entirely self consistent because the machine is not
+  suspended while dumping.
+
+  In addition Illumos has a tool like FreeBSD’s `dumpon(8)' called
+  `dumpadm(1M)' which can set set the current dump device, which in
+  addition to supporting compression, is able to dump to a swap
+  partition on a ZFS zvol. `dumpadm(1M)' is also able to estimate the
+  size of a dump on a running system[16].
 
 
 5 The Future
@@ -452,7 +480,7 @@
   remains uncompressed.
 
   Compressed dumps see a 6 to 14 compression ratio for core dumps with a
-  slight penalty in the time require to write the dump initially[15].
+  slight penalty in the time require to write the dump initially[17].
   However the following `savecore(8)' on the next boot is faster,
   resulting in a faster dump and reboot sequence.
 
@@ -487,7 +515,7 @@
   systems.
 
   There is a proof of concept modularization of the dump code working on
-  FreeBSD 11.0p1[16]. This code has not yet made it into upstream
+  FreeBSD 11.0p1[18]. This code has not yet made it into upstream
   FreeBSD.
 
 
@@ -858,7 +886,7 @@ McKusick, Neville-Neil, and Watson
 [https://developer.apple.com/library/content/technotes/tn2004/tn2118.html]
 
 [5]
-[https://github.com/opensource-apple/xnu/blob/27ffc00f33925b582391b1ef318b78b8bd3939d1/osfmk/kdp/kdp_core.c#L527]
+[https://opensource.apple.com/source/xnu/xnu-3789.31.2/osfmk/kdp/kdp_core.c.auto.html]
 
 [6] [https://svnweb.freebsd.org/base?view=revision&revision=309818]
 
@@ -880,12 +908,15 @@ McKusick, Neville-Neil, and Watson
 [12]
 [https://opensource.apple.com/source/network_cmds/network_cmds-396.6/kdumpd.tproj/kdumpd.8.auto.html]
 
-[13]
-[https://github.com/opensource-apple/xnu/blob/27ffc00f33925b582391b1ef318b78b8bd3939d1/osfmk/kdp/kdp_core.c#L527]
+[13] [https://en.wikipedia.org/wiki/Core_dump]
 
-[14] [https://en.wikipedia.org/wiki/Core_dump]
+[14] [https://en.wikipedia.org/wiki/Illumos]
 
-[15]
+[15] [https://illumos.org/man/1m/savecore]
+
+[16] [https://illumos.org/man/1m/dumpadm]
+
+[17]
 [https://lists.freebsd.org/pipermail/freebsd-arch/2014-November/016231.html]
 
-[16] [https://people.freebsd.org/~rgrimes/]
+[18] [https://people.freebsd.org/~rgrimes/]
