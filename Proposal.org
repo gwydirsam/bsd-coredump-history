@@ -782,13 +782,13 @@ research for this paper and can be found in the appendix.
 
    In =xnu/osfmk/kdp/kdp_core.c= Mac OS X gzips its' core dump before writing it
    out to disk, and is otherwise much like the FreeBSD "full dump" procedure
-   with one major difference besides its' features[fn:20]. Notably, Mac OS X
+   with one major difference besides its' features[fn:12]. Notably, Mac OS X
    uses a different executable image-format called Mach-O, as opposed to ELF,
    because OS X runs a hybrid Mach and BSD kernel called XNU[fn:7].
 
    1. Initialize gzip
    2. Determine where to write dump
-      1. If local, determine offset
+      1. If local, determine offset to place file header, panic and core log
       2. If remote, setup buffer for compressed core and packet size
    3. Traverse the pmap for dumpable pages
    4. Fill in Mach-O header
@@ -809,7 +809,7 @@ research for this paper and can be found in the appendix.
 *** Notes                                                          :noexport:
     # https://developer.apple.com/library/content/technotes/tn2063/_index.html
     # https://developer.apple.com/library/content/technotes/tn2004/tn2118.html
-    # https://github.com/opensource-apple/xnu/blob/27ffc00f33925b582391b1ef318b78b8bd3939d1/osfmk/kdp/kdp_core.c#L491
+    # https://opensource.apple.com/source/xnu/xnu-3789.31.2/osfmk/kdp/kdp_core.c.auto.html
     # https://opensource.apple.com/source/network_cmds/network_cmds-396.6/kdumpd.tproj/
     #+BEGIN_SRC c
     static int
@@ -2443,4 +2443,4 @@ Differential Revision:	https://reviews.freebsd.org/D5848
 [fn:9] https://en.wikipedia.org/wiki/Core_dump
 [fn:10] https://developer.apple.com/library/content/technotes/tn2004/tn2118.html
 [fn:11] https://lists.freebsd.org/pipermail/freebsd-current/2007-December/081626.html
-[fn:12] https://github.com/opensource-apple/xnu/blob/27ffc00f33925b582391b1ef318b78b8bd3939d1/osfmk/kdp/kdp_core.c#L527
+[fn:12] https://opensource.apple.com/source/xnu/xnu-3789.31.2/osfmk/kdp/kdp_core.c.auto.html
