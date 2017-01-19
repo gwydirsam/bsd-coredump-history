@@ -285,7 +285,7 @@ research for this paper and can be found in the appendix.
    =doadump()= if the =RB_DUMP= flag is set and the system is not "cold" or already
    creating a core dump. =doadump()= takes a boolean informing it to whether or not
    to take a "text dump", a form of dump carried out if the online kernel debugger,
-   =DDB=, is built into the running kernel. =doaddump()= returns an error code if
+   =DDB=, is built into the running kernel. =doadump()= returns an error code if
    the system is currently creating a dump, the dumper is NULL and returns error
    codes on behalf of =dumpsys()=.
 
