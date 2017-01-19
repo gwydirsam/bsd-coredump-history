@@ -531,25 +531,7 @@
   • Solaris has this.
 
 
-6 Conclusion (incomplete)
-═════════════════════════
-
-  Though it may seem like core dumps are a solved problem from the past,
-  it turns out the core dump code is an ever changing routine that is
-  constantly being adapted to the times.
-
-
-6.1 Recommendations (incomplete)
-────────────────────────────────
-
-  • textdumps by defaults, but with better defaults?
-  • documentation should include reccomendations on swap size for
-    different amounts of ram
-    • include amounts for fulldump, minidump and textdump at certain RAM
-      sizes
-
-
-7 Acknowledgments
+6 Acknowledgments
 ═════════════════
 
   The author would like thank Michael Dexter for his help debugging the
@@ -562,10 +544,10 @@
   FreeBSD community in general for making this day and paper possible.
 
 
-8 Appendix
+7 Appendix
 ══════════
 
-8.1 The Past: A Complete History of Core Dumps
+7.1 The Past: A Complete History of Core Dumps
 ──────────────────────────────────────────────
 
   The following sections list when different features of the core dump
@@ -574,7 +556,7 @@
   Research UNIX and then BSD through to present versions of FreeBSD.
 
 
-8.2 Core Dumps in UNIX
+7.2 Core Dumps in UNIX
 ──────────────────────
 
   Core dumping was initially a manual process. As documented in Version
@@ -584,7 +566,7 @@
   of code the public has access to.
 
 
-8.2.1 6th Edition UNIX
+7.2.1 6th Edition UNIX
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   In 6th Edition UNIX `crash(8)' teaches us how to manually take a core
@@ -602,13 +584,13 @@
   `m45.s' give UNIX support for the PDP-11/40 and PDP-11/45.
 
 
-8.2.2 7th Edition UNIX
+7.2.2 7th Edition UNIX
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   7th Edition UNIX adds support for the PDP-11/70.
 
 
-8.2.3 UNIX/32V
+7.2.3 UNIX/32V
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   UNIX/32V was an early port of UNIX to the DEC VAX architecture making
@@ -618,17 +600,17 @@
   assembly.
 
 
-8.3 Core Dumps in BSD
+7.3 Core Dumps in BSD
 ─────────────────────
 
-8.3.1 1BSD & 2BSD
+7.3.1 1BSD & 2BSD
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   1BSD and 2BSD inherited their dump code directly from 6th Edition UNIX
   and is therefore supports the PDP-11/40 and PDP-11/45.
 
 
-8.3.2 3BSD
+7.3.2 3BSD
 ╌╌╌╌╌╌╌╌╌╌
 
   3BSD imports its’ dump code from UNIX/32V maintaining the name
@@ -639,7 +621,7 @@
   core dumps are awful and even uninterruptible!’’.
 
 
-8.3.3 4BSD
+7.3.3 4BSD
 ╌╌╌╌╌╌╌╌╌╌
 
   4BSD introduces a new feature to `doadump', printing tracing
@@ -649,7 +631,7 @@
   dumps to swap: “Support automatic dumps to paging area”.
 
 
-8.3.4 4.1BSD
+7.3.4 4.1BSD
 ╌╌╌╌╌╌╌╌╌╌╌╌
 
   Beginning in 4.1BSD `doadump()' is relegated to setting up the machine
@@ -665,29 +647,29 @@
   • In 4.1c2BSD changes VAX7ZZ references to VAX730
 
 
-8.3.5 4.2BSD
+7.3.5 4.2BSD
 ╌╌╌╌╌╌╌╌╌╌╌╌
 
   • no changes.
 
 
-8.3.6 4.3BSD
+7.3.6 4.3BSD
 ╌╌╌╌╌╌╌╌╌╌╌╌
 
-8.3.6.1 4.3 BSD-Tahoe
+7.3.6.1 4.3 BSD-Tahoe
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • Initial support is added for the ``tahoe’’ processor and and
     `doadump' is ported to the tahoe.
 
 
-8.3.6.2 4.3 BSD Net/1
+7.3.6.2 4.3 BSD Net/1
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • Same as 4.3-Tahoe
 
 
-8.3.6.3 4.3 BSD-Reno
+7.3.6.3 4.3 BSD-Reno
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • hp300 and i386 core dump support is added in
@@ -695,13 +677,13 @@
     respectively.
 
 
-8.3.6.4 4.3 BSD Net/2
+7.3.6.4 4.3 BSD Net/2
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • Same as Reno
 
 
-8.3.7 4.4BSD
+7.3.7 4.4BSD
 ╌╌╌╌╌╌╌╌╌╌╌╌
 
   • luna68k support added
@@ -710,74 +692,74 @@
   • sparc support added
 
 
-8.3.7.1 4.4-BSD Lite1 & 4.4-BSD Lite2
+7.3.7.1 4.4-BSD Lite1 & 4.4-BSD Lite2
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • Same as 4.4BSD – changes made due to AT&T UNIX System Laboratories
     (USL) lawsuit.
 
 
-8.3.8 386BSD
+7.3.8 386BSD
 ╌╌╌╌╌╌╌╌╌╌╌╌
 
-8.3.8.1 386BSD 0.0
+7.3.8.1 386BSD 0.0
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • Reduce support to i386 and hp300 support
 
 
-8.3.8.2 386BSD 0.1
+7.3.8.2 386BSD 0.1
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • hp300 code removed
 
 
-8.3.8.3 386BSD 0.1-patchkit
+7.3.8.3 386BSD 0.1-patchkit
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • Same as 386BSD 0.1
 
 
-8.4 Core Dumps in FreeBSD
+7.4 Core Dumps in FreeBSD
 ─────────────────────────
 
-8.4.1 FreeBSD 1.0
+7.4.1 FreeBSD 1.0
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   • i386 support from 386BSD-0.1-patchkit
 
 
-8.4.2 FreeBSD 2.0.0
+7.4.2 FreeBSD 2.0.0
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
-8.4.2.1 FreeBSD 2.0.0
+7.4.2.1 FreeBSD 2.0.0
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • `doadump()' no longer exists, though is mentioned in comments.
 
 
-8.4.2.2 FreeBSD 2.2.0
+7.4.2.2 FreeBSD 2.2.0
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • `dumpsys()' is placed inside `boot()' and `dumpsys()' in
     `kern_shutdown.c' because code was not seen as machine dependent.
 
 
-8.4.3 FreeBSD 3.0.0
+7.4.3 FreeBSD 3.0.0
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   • SMP support
   • alpha support
 
 
-8.4.4 FreeBSD 4.0.0
+7.4.4 FreeBSD 4.0.0
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   • Added print uptime before rebooting.
   • Better error message when dumps are not supported
 
 
-8.4.5 FreeBSD 5.0.0
+7.4.5 FreeBSD 5.0.0
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   • Added IA64, sparc64, and pc98 support.
@@ -787,10 +769,10 @@
     initialisation before single user mode
 
 
-8.4.6 FreeBSD 6.0.0
+7.4.6 FreeBSD 6.0.0
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
-8.4.6.1 FreeBSD 6.0.0
+7.4.6.1 FreeBSD 6.0.0
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • AMD64 and arm support added.
@@ -798,16 +780,16 @@
   • AMD64 and i386 bump their dump format to version 2.
 
 
-8.4.6.2 FreeBSD 6.2.0
+7.4.6.2 FreeBSD 6.2.0
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • minidump code added.
 
 
-8.4.7 FreeBSD 7.0.0
+7.4.7 FreeBSD 7.0.0
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
-8.4.7.1 FreeBSD 7.0.0
+7.4.7.1 FreeBSD 7.0.0
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • sun4v support added
@@ -815,20 +797,20 @@
   • alpha support is removed
 
 
-8.4.7.2 FreeBSD 7.1.0
+7.4.7.2 FreeBSD 7.1.0
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • textdump code is added
 
 
-8.4.8 FreeBSD 8.0.0
+7.4.8 FreeBSD 8.0.0
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   • PowerPC support added.
   • mips support added.
 
 
-8.4.9 FreeBSD 9.0.0
+7.4.9 FreeBSD 9.0.0
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   • Merge common amd64/i386 dump code under `sys/x86' subtree.
@@ -837,7 +819,7 @@
   • Minidump v2
 
 
-8.4.10 FreeBSD 10.0.0
+7.4.10 FreeBSD 10.0.0
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   • On systems with SMP, CPUs other than the one processing the panic
@@ -845,7 +827,7 @@
     `kern.stop_scheduler_on_panic’
 
 
-8.4.11 FreeBSD 11.0.0
+7.4.11 FreeBSD 11.0.0
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   • RISC-V support added.
@@ -860,7 +842,7 @@
     dump header
 
 
-8.4.12 FreeBSD 12-CURRENT
+7.4.12 FreeBSD 12-CURRENT
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   • Support for encrypted kernel crash dumps added. `dumpon(8)' and
