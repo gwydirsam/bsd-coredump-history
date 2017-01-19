@@ -1368,7 +1368,7 @@ research for this paper and can be found in the appendix.
 ** Dump to swap on zvol (incomplete)
    - Solaris has this. 
 *** Notes                                                          :noexport:
-* Conclusion (incomplete)
+* Conclusion (incomplete)                                          :noexport:
   Though it may seem like core dumps are a solved problem from the past, it
   turns out the core dump code is an ever changing routine that is constantly
   being adapted to the times. 
