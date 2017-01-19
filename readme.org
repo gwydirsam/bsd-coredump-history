@@ -67,7 +67,10 @@ research for this paper and can be found in the appendix.
 ** TODO Finish Conclusion
 ** TODO Submit Finished Paper to AsiaBSD Con 2017
    DEADLINE: <2017-02-04 Fri>
-** TODO Submit to BSDCan
-   DEADLINE: <2017-01-19 Thu>
+** DONE Submit to BSDCan
+   CLOSED: [2017-01-19 Thu 10:58] DEADLINE: <2017-01-19 Thu>
 ** TODO Add Sandvine (projects/sv) Branch to history
 ** TODO Add description of =dumpon(8)=
+** TODO Add thanks:
+*** TODO Allan Jude
+*** TODO Daniel Nowacki
