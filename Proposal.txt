@@ -19,12 +19,12 @@
 ══════════
 
   Crash dumps, also known as core dumps, have been a part of BSD since
-  it’s beginnings in Research UNIX. A core dump is ``a copy of memory
+  its beginnings in Research UNIX. A core dump is ``a copy of memory
   that is saved on secondary storage by the kernel’’ for debugging a
-  system failure[1]. Though 38 years have passed since `doadump()' came
-  about in UNIX/32V, core dumps are still needed and utilized in much
-  the same way they were then. Given this, one might assume the core
-  dump code changed little over time but, with some research, this
+  system failure[1]. Even though 38 years have passed since `doadump()'
+  came about in UNIX/32V, core dumps are still needed and utilized in
+  much the same way they were then. Given this, one might assume the
+  core dump code changed little over time but, with some research, this
   assumption has proven incorrect.
 
   What has changed over time is where core dumps are sent to and what
@@ -34,8 +34,8 @@
   supported the PDP-11, it was the only architecture supported for
   dumps. Over time machine architecture support has evolved from
   different PDP-11 models to hp300, i386 up to the present day with
-  AMD64 and ARM64. In addition the type of dump device has changed from
-  tape, to hard disk or another machine over a LAN.
+  AMD64 and ARM64. In addition, the type of dump device has changed from
+  tape to hard disk or another machine over a LAN.
 
   The following paper begins with a quick background on what core dumps
   are and why operators might need them. Following that the current
@@ -53,7 +53,7 @@
 ══════════════
 
   The BSD core dump facility performs a simple yet vital service to the
-  operator: preserving a copy of the contents of system memory at the
+  operator: it preserves a copy of the contents of system memory at the
   time of a fatal error for later debugging.
 
   This copy or ``dump’’ can be a machine readable form of the complete
@@ -64,10 +64,10 @@
   Throughout the history of UNIX operating systems, different methods
   have been used to produce a core dump. In the earliest UNIXes magnetic
   tape was the only supported dump device but when hard disk support
-  matured swap space was used, obviating the need for changing out tapes
-  before a dump[2]. Modern and embedded systems continue to introduce
-  new constraints that have motivated the need for newer methods of
-  ex-filtrating a core dump from a faltering kernel.
+  matured, swap space was used, obviating the need for changing out
+  tapes before a dump[2]. Modern and embedded systems continue to
+  introduce new constraints that have motivated the need for newer
+  methods of ex-filtrating a core dump from a faltering kernel.
 
   The FreeBSD variant of the BSD operating system has introduced gradual
   extensions to the core dumping facility. FreeBSD 6.2 introduced
@@ -87,8 +87,8 @@
   a distinct pedigree from FreeBSD[4][5].
 
   The following paper will provide a historical survey of the dump
-  facility itself, from its’ introduction in UNIX to its’ current form
-  in modern BSDs and BSD derived operating systems. We will also explore
+  facility itself, from its introduction in UNIX to its current form in
+  modern BSDs and BSD derived operating systems. We will also explore
   these core dump extensions, associated tools, and describe an active
   effort to fully modularize them, allowing the operator to enable one
   or more of them simultaneously.
@@ -97,7 +97,7 @@
 3 Motivation
 ════════════
 
-  In UNIX and early BSD’s core dumps were originally made to magnetic
+  In UNIX and early BSDs core dumps were originally made to magnetic
   tape which was superseded by dumping to a swap partition on a hard
   disk since at least 3BSD. For decades since, increases in physical
   system memory and swap partition size have loosely tracked increases
@@ -113,17 +113,17 @@
   inaccurate. This change has spurred development of several extensions
   to the core dumping facility, including compressed dumping to swap and
   dumping over the network to a server with disk space for modern core
-  dumps. Because dumps contain all the contents of memory any sensitive
+  dumps. Because dumps contain all the contents of memory, any sensitive
   information in flight at the time of a crash appears in the dump. For
   this reason encrypted dumps have been recently added to FreeBSD[6].
 
   While dealing with the above problems the author and his colleagues
-  became intimately familiar with the state of the core dump code and
-  its’ associated documentation. As users of the core dump code they
-  felt a need for more flexibility and extensibity in the core dump
-  routines of FreeBSD. The author intends to provide a basis for the
-  argument that the core dump code should be modularized for the
-  flexibility that provides to operators.
+  became closely familiar with the state of the core dump code and its
+  associated documentation. As users of the core dump code they felt a
+  need for more flexibility and extensibity in the core dump routines of
+  FreeBSD. The author intends to provide a basis for the argument that
+  the core dump code should be modularized for the flexibility that
+  provides to operators.
 
   In addition it is hoped that the information herein is of use to
   inform further work on core dumps, failing that we hope it is
@@ -142,8 +142,8 @@
   When a UNIX-like system such as FreeBSD encounters an unrecoverable
   and unexpected error the kernel will “panic”. Though the word panic
   has connotations of irrationality, the function `panic(9)' maintains
-  composure while it shutsdown the running system and attempts to save a
-  core dump to a configured dump device.
+  composure while it shuts down the running system and attempts to save
+  a core dump to a configured dump device.
 
   What follows is a thorough description of the FreeBSD core dump
   routine (as of FreeBSD 11-RELEASE) starting with `doadump()' in
@@ -167,7 +167,8 @@
   different architectures to setup their dump structure differently.
   `dumpsys()' calls `dumpsys_generic()' passing along the `struct
   dumperinfo' it was called with. `dumpsys_generic()' is defined in
-  `sys/kern/kern_dump.c' and is the meat of the core dump procedure.
+  `sys/kern/kern_dump.c' and is the foundation of the core dump
+  procedure.
 
   There are several main steps to the `dumpsys_generic()' procedure. The
   main steps are as follows. At any point if there is an error
@@ -345,10 +346,10 @@
   ━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━
   Table 6: `textdump(4)' Format
 
-  The `textdump(4)' procedure is similar in it’s setup to the other
-  types of dumps but has several differences in particular because the
-  dump is in ustar format containing several text files instead of a
-  binary format containing kernel pages.
+  The `textdump(4)' procedure is similar in its setup to the other types
+  of dumps but has several differences in particular because the dump is
+  in ustar format containing several text files instead of a binary
+  format containing kernel pages.
 
   1. Check if minimum amount of space is available on dump device
   2. Set start of dump at the end of the swap partition minus the size
@@ -384,7 +385,7 @@
 
   In `xnu/osfmk/kdp/kdp_core.c' Mac OS X gzips its’ core dump before
   writing it out to disk, and is otherwise much like the FreeBSD “full
-  dump” procedure with one major difference besides its’ features[5].
+  dump” procedure with one major difference besides its features[5].
   Notably, Mac OS X uses a different executable image-format called
   Mach-O, as opposed to ELF, because OS X runs a hybrid Mach and BSD
   kernel called XNU[13].
@@ -417,7 +418,7 @@
   ``illumos is a free and open-source Unix operating system. It derives
   from OpenSolaris, which in turn derives from SVR4 UNIX and Berkeley
   Software Distribution (BSD).’’[14] Illumos has several attractive
-  features in it’s core dump routine including ``live dumping’’,
+  features in its core dump routine including ``live dumping’’,
   compression and support for swap on zvol as a dump device.
 
   The Illumos dump routine, `dumpsys()' can be found in
@@ -445,9 +446,9 @@
   as sets of patches on mailing lists and wikis but are not found in
   upstream FreeBSD.
 
-  First we provide some background on several extensions and tools
+  First, we provide some background on several extensions and tools
   including dumping over the network, compressed dumps and a tool for
-  estimating the size of a minidump. Then we will explore the benifets
+  estimating the size of a minidump. Then we will explore the benefits
   of modularized core dump code.
 
 
@@ -479,10 +480,10 @@
   main filesystem. The core dump that was written to the swap partition
   remains uncompressed.
 
-  Compressed dumps see a 6 to 14 compression ratio for core dumps with a
-  slight penalty in the time require to write the dump initially[17].
-  However the following `savecore(8)' on the next boot is faster,
-  resulting in a faster dump and reboot sequence.
+  Compressed dumps see a 6:1 to 14:1 compression ratio for core dumps
+  with a slight penalty in the time required to write the dump
+  initially[17]. However the following `savecore(8)' on the next boot is
+  faster, resulting in a faster dump and reboot sequence.
 
   Compressed dumps have not yet made it into upstream FreeBSD.
 
@@ -510,7 +511,7 @@
   dump code one would need to recompile their kernel and reboot. This is
   highly undesireable when an operator wants to upgrade or fix their
   production systems. Refactoring the dump code into loadable kernel
-  modules (LKM) would yeild two major benifets for operators: easier
+  modules (LKM) would yield two major benefits for operators: easier
   development of fixes and features and a smaller kernel for embedded
   systems.
 
@@ -534,8 +535,8 @@
 6 Acknowledgments
 ═════════════════
 
-  The author would like thank Michael Dexter for his help debugging the
-  original issues that led to our current combined knowledge of core
+  The author would like to thank Michael Dexter for his help debugging
+  the original issues that led to our current combined knowledge of core
   dumps. In addition, Rodney W. Grimes’ historical knowledge and help
   reading code from PDP-11 assembly to modern C was invaluable.
 
@@ -569,8 +570,7 @@
 7.2.1 6th Edition UNIX
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
-  In 6th Edition UNIX `crash(8)' teaches us how to manually take a core
-  dump:
+  In 6th Edition UNIX `crash(8)' shows how to manually take a core dump:
 
         If the reason for the crash is not evident (see below for
         guidance on `evident’) you may want to try to dump the
@@ -607,13 +607,13 @@
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   1BSD and 2BSD inherited their dump code directly from 6th Edition UNIX
-  and is therefore supports the PDP-11/40 and PDP-11/45.
+  so it therefore supports the PDP-11/40 and PDP-11/45.
 
 
 7.3.2 3BSD
 ╌╌╌╌╌╌╌╌╌╌
 
-  3BSD imports its’ dump code from UNIX/32V maintaining the name
+  3BSD imports its dump code from UNIX/32V maintaining the name
   `doadump()'. Because of this pedigree, `doadump()' is written in VAX
   assembly.
 
