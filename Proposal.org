@@ -781,7 +781,7 @@ research for this paper and can be found in the appendix.
    situations where the kernel panic is caused by the Ethernet driver or network
    code.
 
-   In =xnu/osfmk/kdp/kdp_core.c= Mac OS X gzips its' core dump before writing it
+   In =xnu/osfmk/kdp/kdp_core.c= Mac OS X gzips its core dump before writing it
    out to disk, and is otherwise much like the FreeBSD "full dump" procedure
    with one major difference besides its features[fn:12]. Notably, Mac OS X
    uses a different executable image-format called Mach-O, as opposed to ELF,
