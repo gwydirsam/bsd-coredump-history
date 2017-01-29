@@ -72,5 +72,6 @@ research for this paper and can be found in the appendix.
 ** TODO Add Sandvine (projects/sv) Branch to history
 ** TODO Add description of =dumpon(8)=
 ** TODO Add thanks:
-*** TODO Allan Jude
-*** TODO Daniel Nowacki
+*** TODO Allan Jude - spelling
+*** TODO Daniel Nowacki - spelling, grammar and syntax
+*** TODO Chris Findeisen - phrasing suggestions

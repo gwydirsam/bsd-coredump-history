@@ -217,6 +217,8 @@ research for this paper and can be found in the appendix.
   # lucky, some news about dump procedures relating to hibernation and virtual
   # machine migration!)
 
+  # (To be deleted, CF) The below paragraph seems repetitive. Can you say it without repeating the Abstract above?
+
   The following paper will provide a historical survey of the dump facility
   itself, from its introduction in UNIX to its current form in modern
   BSDs and BSD derived operating systems. We will also explore these core dump
@@ -232,6 +234,8 @@ research for this paper and can be found in the appendix.
 
 
 * Motivation
+  
+# (To be deleted, CF) I've read this thing about CD's going to magnetic tape 3 times now. get rid of the repetition
 
   In UNIX and early BSDs core dumps were originally made to magnetic
   tape which was superseded by dumping to a swap partition on a hard disk
@@ -254,6 +258,10 @@ research for this paper and can be found in the appendix.
   core dumps. Because dumps contain all the contents of memory, any sensitive
   information in flight at the time of a crash appears in the dump. For this
   reason encrypted dumps have been recently added to FreeBSD[fn:13].
+ 
+  # (To be deleted, CF): Try replacing the below Paragraph with mine
+  # This lack of swap space demands a change to the coredump routine for some, but based on coredump's
+  # history and ubiquity across a variety of systems, the routine needs more extensibility, rather than one more change.
 
   While dealing with the above problems the author and his colleagues became
   closely familiar with the state of the core dump code and its associated
@@ -280,6 +288,7 @@ research for this paper and can be found in the appendix.
    of FreeBSD 11-RELEASE) starting with =doadump()= in
    =sys/kern/kern_shutdown.c=.
 
+   # (To be deleted, CF): how detailed should this be? Not sure how much you paraphrased, but can't the curious read the code?
    =doadump()= is called by =kern_reboot()=, which shuts down "the system cleanly to
    prepare for reboot, halt, or power off." [fn:4] =kern_reboot()= calls
    =doadump()= if the =RB_DUMP= flag is set and the system is not "cold" or already
@@ -303,6 +312,7 @@ research for this paper and can be found in the appendix.
    steps are as follows. At any point if there is an error condition, goto
    failure cleanup at the end of the procedure.
 
+   # (To be deleted, CF) This is more of the detail that I was expecting
    1. Fill in the ELF header.
    2. Calculate the dump size.
    3. Determine if the dump device is large enough.
@@ -1126,6 +1136,8 @@ research for this paper and can be found in the appendix.
    explained previously, the Illumos dump routine is very complex but with that
    complexity comes several features that are not available elsewhere.
 
+   # (To be deleted, CF): It's not clear to me that the following two Paragraphs are related to the "several features".
+
    Illumos' =savecore(1M)= has the ability to ``live dump'', creating a dump of
    a running system[fn:22]. =savecore(1M)= does note that this dump will not be
    entirely self consistent because the machine is not suspended while dumping.
@@ -1374,12 +1386,12 @@ research for this paper and can be found in the appendix.
   turns out the core dump code is an ever changing routine that is constantly
   being modernized and adapted. 
 
+# (To be deleted, CF) "This constant changing reflects a need for extensibility within the routine."
 ** Recommendations (incomplete)
    - textdumps by defaults, but with better defaults?
    - documentation should include recommendations on swap size for different amounts of ram
      - include amounts for fulldump, minidump and textdump at certain RAM sizes
 * Acknowledgments
-
   The author would like to thank Michael Dexter for his help debugging the original
   issues that led to our current combined knowledge of core dumps. In addition,
   Rodney W. Grimes' historical knowledge and help reading code from PDP-11
