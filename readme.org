@@ -50,6 +50,9 @@ In addition a complete history of core dumps in UNIX and BSD was produced as
 research for this paper and can be found in the appendix.
 
 * 'TODO' list
+** TODO Create Slides
+** TODO Add backtrace.io features
+** TODO Add how to force a dump
 ** TODO Clean up notes
 ** DONE Finish Textdump Procedure and Contents
    CLOSED: [2017-01-14 Sat 14:11]
