@@ -1167,6 +1167,9 @@ research for this paper and can be found in the appendix.
       - https://illumos.org/man/1m/dumpadm
     - =savecore(1M)=
       - https://illumos.org/man/1m/savecore
+** Backtrace.io
+   - Features
+   - Snapshots
 * The Future
   There are several extensions to the FreeBSD core dump code that exist as sets
   of patches on mailing lists and wikis but are not found in upstream FreeBSD.
