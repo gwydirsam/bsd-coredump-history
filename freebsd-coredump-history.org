@@ -823,6 +823,7 @@ research for this paper and can be found in the appendix.
     # https://opensource.apple.com/source/xnu/xnu-3789.31.2/osfmk/kdp/kdp_core.c.auto.html
     # https://opensource.apple.com/source/network_cmds/network_cmds-396.6/kdumpd.tproj/
     #+BEGIN_SRC c
+
     static int
     do_kern_dump(kern_dump_output_proc outproc, bool local)
     {
@@ -1148,7 +1149,8 @@ research for this paper and can be found in the appendix.
    The Illumos dump routine, =dumpsys()= can be found in
    =usr/sys/uts/common/os/dumpsubr.c=. In contrast to the other dump routines
    explained previously, the Illumos dump routine is very complex but with that
-   complexity comes several features that are not available elsewhere.
+   complexity comes the several features mentioned above that are not available
+   elsewhere.
 
    # (To be deleted, CF): It's not clear to me that the following two Paragraphs are related to the "several features".
 
@@ -1156,11 +1158,11 @@ research for this paper and can be found in the appendix.
    a running system[fn:22]. =savecore(1M)= does note that this dump will not be
    entirely self consistent because the machine is not suspended while dumping.
    
-   In addition Illumos has a tool like FreeBSD's =dumpon(8)= called
-   =dumpadm(1M)= which can set set the current dump device, which in addition to
-   supporting compression, is able to dump to a swap partition on a ZFS zvol.
-   =dumpadm(1M)= is also able to estimate the size of a dump on a running
-   system[fn:21].
+   In addition to a version of =savecore(1M)=, Illumos has a tool analogous to
+   FreeBSD's =dumpon(8)= called =dumpadm(1M)= which primarily is used to set the
+   current dump device. Importantly this dump device can be a swap partition in
+   a ZFS zvol. =dumpadm(1M)= is also used to configure save compression and is
+   able to estimate the size of a dump on a running system[fn:21].
    
 *** Notes                                                          :noexport:
     - =dumpadm(1M)=
@@ -1265,6 +1267,10 @@ research for this paper and can be found in the appendix.
    =minidumpsz= performs an inactive version of the minidump routine,
    =minidumpsys()=, to estimate the size of a dump if it were to take place at
    the time of the sysctl's calling.
+
+   Illumos is also capable of performing an online dump size estimation using
+   =dumpadm(1M)='s ~-e~ option which estimates the size of the dump taking in
+   account options like compression [fn:21].
 
    =minidumpsz= was created by Rodney W. Grimes for the author's work at
    Groupon and applies to FreeBSD 10.1 and FreeBSD 11. =minidumpsz= has not
@@ -1392,12 +1398,61 @@ research for this paper and can be found in the appendix.
      Rod Grimes                                                 rgrimes@freebsd.org
      #+END_QUOTE
 
-** Live Dump (incomplete)
-   - Solaris has this. 
+** Dump to swap on zvol
+   Many users of FreeBSD use ZFS extensively. Though FreeBSD supports most ZFS
+   features it currently is not recommended to use swap on a zvol as a dump
+   device. However Illumos distributions support this out of the box and it is
+   often the default [fn:21]. 
+
+   This would be incredibly useful for users of ZFS in enterprise settings
+   because ZFS datasets and zvols can be created, destroyed, and modified
+   online, while modifying standard swap partitions is not possible without
+   taking a machine offline and may not be trivial without re-imaging a machine.
+   
 *** Notes                                                          :noexport:
-** Dump to swap on zvol (incomplete)
-   - Solaris has this. 
+
+**** TODO Test dump on swap on zvol
+
+
+**** omnios swap info
+     It is important to note that Illumos does require a
+     "dedicated" dump device separate from its swap partition.
+     #+BEGIN_QUOTE
+     vagrant@omnios-vagrant:/export/home/vagrant$ swap -l
+     swapfile             dev    swaplo   blocks     free
+     /dev/zvol/dsk/rpool/swap 266,2         8  2097144  2097032
+     vagrant@omnios-vagrant:/export/home/vagrant$ sudo dumpadm
+           Dump content: kernel pages
+            Dump device: /dev/zvol/dsk/rpool/dump (dedicated)
+     Savecore directory: /var/crash/unknown
+       Savecore enabled: yes
+        Save compressed: on
+     #+END_QUOTE
+** Live Dump
+   The ability to take a core dump on an online system can be useful when a
+   machine is otherwise hung and a the crash or panic would be difficult if not
+   impossible to reproduce. Illumos can force a crash dump on an online system
+   by issuing the ~savecore -L~ command. 
+
+   This feature is not a replacement for normal crash dumps because the system
+   is not halted during the dump which leads to an inconsistent state stored in
+   the core dump. However, this adds another tool for enterprise FreeBSD users
+   that must avoid taking machines offline as much as possible.
 *** Notes                                                          :noexport:
+    - https://wiki.illumos.org/plugins/viewsource/viewpagesrc.action?pageId=1146929
+
+**** Live Dump Example
+     #+BEGIN_QUOTE
+     vagrant@omnios-vagrant:/export/home/vagrant$ sudo savecore -L
+     dumping to /dev/zvol/dsk/rpool/dump, offset 65536, content: kernel
+     dumping:  0:00 100% done
+     100% done: 66940 pages dumped, dump succeeded
+     savecore: System dump time: Mon Jan 30 15:08:50 2017
+     
+     savecore: Saving compressed system crash dump in /var/crash/unknown/vmdump.0
+     savecore: Decompress the crash dump with
+     'savecore -vf /var/crash/unknown/vmdump.0'
+     #+END_QUOTE
 * Conclusion (incomplete)                                          :noexport:
   Though it may seem like core dumps are a solved problem from the past, it
   turns out the core dump code is an ever changing routine that is constantly
@@ -2468,7 +2523,7 @@ Differential Revision:	https://reviews.freebsd.org/D5848
       - sys/amd64/amd64/machdep\_minidump.c
       - and rarely bits might be in sys/amd64/amd64/pmap.c
 
-
+        
 * Footnotes
 
 [fn:22] https://illumos.org/man/1m/savecore
