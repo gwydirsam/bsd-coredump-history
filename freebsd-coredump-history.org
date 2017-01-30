@@ -2319,7 +2319,7 @@ Date:   Tue Jun 7 01:28:12 2011 +0000
 *** FreeBSD 10.0.0
 # **** FreeBSD 10.0.0
     - On systems with SMP, CPUs other than the one processing the panic are
-      stopped. This behavior is tunable with the sysctl `kern.stop_scheduler_on_panic'
+      stopped. This behavior is tunable with the sysctl =kern.stop_scheduler_on_panic=
 **** FreeBSD 10.1.0                                                :noexport:
 **** FreeBSD 10.2.0                                                :noexport:
 **** FreeBSD 10.3.0                                                :noexport:
