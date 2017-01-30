@@ -1,7 +1,7 @@
 #+OPTIONS: ':t *:t -:t ::t <:t H:4 \n:nil ^:t arch:headline author:t c:nil
 #+OPTIONS: creator:nil d:(not "LOGBOOK") date:t e:t email:nil f:t inline:t
 #+OPTIONS: num:t p:nil pri:nil prop:nil stat:t tags:t tasks:t tex:t timestamp:t
-#+OPTIONS: title:t toc:nil todo:t |:t
+#+OPTIONS: title:t toc:nil todo:nil |:t
 #+TITLE: The History and Future of Core Dumps in FreeBSD
 
 #+DATE: \today
