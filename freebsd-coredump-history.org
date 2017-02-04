@@ -141,21 +141,13 @@ doadump:
 * Abstract
 
 Crash dumps, also known as core dumps, have been a part of BSD since its
-beginnings in Research UNIX. A core dump is ``a copy of memory that is saved on
-secondary storage by the kernel'' for debugging a system failure[fn:1]. Even though
-38 years have passed since =doadump()= came about in UNIX/32V, core dumps are
-still needed and utilized in much the same way they were then. Given this, one
-might assume the core dump code changed little over time but, with some
-research, this assumption has proven incorrect.
-
-What has changed over time is where core dumps are sent to and what processor
-architectures are supported. Previous to the advent of UNIX, core dumps were
-printed to a line printer or punch cards. At the birth of UNIX core dumps were
-made to magnetic tape and because UNIX only supported the PDP-11, it was the
-only architecture supported for dumps. Over time machine architecture support
-has evolved from different PDP-11 models to hp300, i386 up to the present day
-with AMD64 and ARM64. In addition, the type of dump device has changed from tape
-to hard disk or another machine over a LAN.
+beginnings in Research UNIX. Though 38 years have passed since =doadump()= came
+about in UNIX/32V, core dumps are still needed and utilized in much the same way
+they were then. However, as underlying assumptions about the ratio of swap to
+RAM have proven inappropriate for modern systems, several extensions have been
+made by those who needed core dumps on very large servers, or very small
+embedded systems. Frustratingly these extensions have not made it to upstream
+FreeBSD.
 
 The following paper begins with a quick background on what core dumps are and
 why operators might need them. Following that the current state of the core dump
