@@ -1170,8 +1170,64 @@ research for this paper and can be found in the appendix.
     - =savecore(1M)=
       - https://illumos.org/man/1m/savecore
 ** Backtrace.io
-   - Features
-   - Snapshots
+   "Backtrace is a company that is aiming [to improve] the post-mortem debugging
+   process." [fn:23] Unlike the rest of this paper, Backtrace is not an
+   operating system's dump process or its features, but a tool for analyzing
+   cores once they are generated.
+   
+   Backtrace supports several languages for userspace core dumps, including C,
+   C++, Go, Python. Most importantly, Backtrace supports FreeBSD kernel core
+   dumps. This section will focus on FreeBSD kernel core dump support.
+
+   Backtrace does not replace the FreeBSD core dump procedure, but is a service
+   that collects core dumps and helps the operator traige and fix the bugs that
+   cause those cores to be dumped. 
+
+   Backtrace is a system made up of several parts: =coresnapd=, a snapshot
+   generator; a set of analysis modules for automated debugging; =coroner=, an
+   object store; a web interface and =hydra= its terminal counterpart [fn:28].
+
+   After a sucessful =savecore(8)=, =coresnapd= and a set of companion scripts
+   create a "snapshot" of any cores generated and send it back to
+   =coroner= [fn:26]. A snapshot contains a stack-trace across all threads,
+   active regions of memory, requested global variables, environment information
+   like virtual memory and CPU statistics, custom metadata such as datacenter,
+   and annotations created by the analysis modules such as automated checking
+   for a double =free()= of a pointer [fn:28]. This results in a self-contained
+   package that is smaller than a minidump and can be analyzed on a machine with
+   an environment differing from the machine that created the original
+   core [fn:24]. Once collected, Backtrace's web interface can be used to
+   categorize and triage different faults by any metadata or by panic string,
+   for example. After triage, the web interface or =hydra= can be used to
+   analyze snapshots [fn:27].
+
+
+   # A snapshot contains all the items listed in Table [[tab:btsnap]] [fn:28]
+
+
+    # #+CAPTION: Backtrace Snapshot
+    # #+NAME:   tab:btsnap
+    # |---+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------|
+    # |   | Field                                                                                                                                                                                  | Description |
+    # |---+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------|
+    # | / | >                                                                                                                                                                                      | <           |
+    # |   | The stack-trace across all threads.                                                                                                                                                    |             |
+    # |   | Regions of memory backing reachable objects on the stack and heap.                                                                                                                     |             |
+    # |   | Requested global variables.                                                                                                                                                            |             |
+    # |   | Environmental information like virtual memory stats, CPU stats, process state and more.                                                                                                |             |
+    # |   | Any contextual meta data you choose. This includes things like data center, customer, version, and environment. Our snapshot format doesn't impose any restrictions on your meta data. |             |
+    # |   | Annotations and classifiers added by analysis modules to highlight anomalous behavior. You can easily ship your own modules using our LUA or C API.                                    |             |
+    # |---+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------|
+
+
+
+   Backtrace has also sponsored work on FreeBSD itself, by improving =kvm(3)='s
+   libkvm physical address lookup time from a linear time lookup to a constant
+   time lookup. This provides gains in runtime complexity and space complexity
+   of dealing with cores via =crashinfo(8)= or =kgdb(1)= especially for those
+   systems with large amounts of RAM. [fn:25]
+*** Notes                                                          :noexport:
+    - email will@freebsd.org to look through this.
 * The Future
   There are several extensions to the FreeBSD core dump code that exist as sets
   of patches on mailing lists and wikis but are not found in upstream FreeBSD.
@@ -2525,6 +2581,18 @@ Differential Revision:	https://reviews.freebsd.org/D5848
 
         
 * Footnotes
+
+[fn:28] https://documentation.backtrace.io/overview/
+
+[fn:27] https://documentation.backtrace.io/hydra/
+
+[fn:26] https://documentation.backtrace.io/coresnap_integration/
+
+[fn:25] https://svnweb.freebsd.org/base?view=revision&revision=302976
+
+[fn:24] https://backtrace.io/blog/whats-a-coredump/
+
+[fn:23] https://backtrace.io/blog/supporting-freebsd-backtrace-and-bsd-now/
 
 [fn:22] https://illumos.org/man/1m/savecore
 
