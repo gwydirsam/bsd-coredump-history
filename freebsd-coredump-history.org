@@ -1529,13 +1529,15 @@ research for this paper and can be found in the appendix.
    - documentation should include recommendations on swap size for different amounts of ram
      - include amounts for fulldump, minidump and textdump at certain RAM sizes
 * Acknowledgments
-  The author would like to thank Michael Dexter for his help debugging the original
-  issues that led to our current combined knowledge of core dumps. In addition,
-  Rodney W. Grimes' historical knowledge and help reading code from PDP-11
-  assembly to modern C was invaluable.
+  The author would like to thank Michael Dexter, for his initial prompting to
+  write this paper and his help debugging the original issues that led to our
+  current combined knowledge of core dumps, Rodney W. Grimes, for historical
+  knowledge and help reading code from PDP-11 assembly to modern C, and Allan
+  Jude, Daniel Nowacki and Chris Findeisen for finding and correct the many,
+  many spelling, grammar and syntax issues in earlier versions of this paper.
 
   The author thanks Deb Goodkin of the FreeBSD Foundation for her help bringing
-  the author into the FreeBSD community and lastly thanks the FreeBSD community
+  me into the FreeBSD community and lastly thanks the FreeBSD community
   in general for making this day and paper possible.
 
 
