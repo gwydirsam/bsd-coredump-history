@@ -130,15 +130,15 @@ doadump:
 
 #+END_COMMENT
 
-\pagebreak
-\onecolumn
+# \pagebreak
+# \onecolumn
 
-\tableofcontents
-\listoftables
+# \tableofcontents
+# \listoftables
 
-\twocolumn
+# \twocolumn
 
-* Abstract
+\subsection*{Abstract}
 
 Crash dumps, also known as core dumps, have been a part of BSD since its
 beginnings in Research UNIX. Though 38 years have passed since =doadump()= came

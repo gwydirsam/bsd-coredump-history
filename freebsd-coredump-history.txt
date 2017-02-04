@@ -8,39 +8,30 @@
                                  \today
 
 
-\pagebreak \onecolumn
+\subsection*{Abstract}
 
-\tableofcontents \listoftables
+Crash dumps, also known as core dumps, have been a part of BSD since its
+beginnings in Research UNIX. Though 38 years have passed since
+`doadump()' came about in UNIX/32V, core dumps are still needed and
+utilized in much the same way they were then. However, as underlying
+assumptions about the ratio of swap to RAM have proven inappropriate for
+modern systems, several extensions have been made by those who needed
+core dumps on very large servers, or very small embedded systems.
+Frustratingly these extensions have not made it to upstream FreeBSD.
 
-\twocolumn
+The following paper begins with a quick background on what core dumps
+are and why operators might need them. Following that the current state
+of the core dump facility and some of the more common extensions in use
+are examined. We conclude with a call to action for upstreaming these
+extensions and modularizing the core dump code such that different
+methods of core dump can be dynamically loaded into the kernel on
+demand.
 
-
-1 Abstract
-══════════
-
-  Crash dumps, also known as core dumps, have been a part of BSD since
-  its beginnings in Research UNIX. Though 38 years have passed since
-  `doadump()' came about in UNIX/32V, core dumps are still needed and
-  utilized in much the same way they were then. However, as underlying
-  assumptions about the ratio of swap to RAM have proven inappropriate
-  for modern systems, several extensions have been made by those who
-  needed core dumps on very large servers, or very small embedded
-  systems. Frustratingly these extensions have not made it to upstream
-  FreeBSD.
-
-  The following paper begins with a quick background on what core dumps
-  are and why operators might need them. Following that the current
-  state of the core dump facility and some of the more common extensions
-  in use are examined. We conclude with a call to action for upstreaming
-  these extensions and modularizing the core dump code such that
-  different methods of core dump can be dynamically loaded into the
-  kernel on demand.
-
-  In addition a complete history of core dumps in UNIX and BSD was
-  produced as research for this paper and can be found in the appendix.
+In addition a complete history of core dumps in UNIX and BSD was
+produced as research for this paper and can be found in the appendix.
 
 
-2 Introduction
+1 Introduction
 ══════════════
 
   The BSD core dump facility performs a simple yet vital service to the
@@ -85,7 +76,7 @@
   or more of them simultaneously.
 
 
-3 Motivation
+2 Motivation
 ════════════
 
   In UNIX and early BSDs core dumps were originally made to magnetic
@@ -121,13 +112,13 @@
   interesting.
 
 
-4 The Present
+3 The Present
 ═════════════
 
-4.1 Core Dumps in FreeBSD
+3.1 Core Dumps in FreeBSD
 ─────────────────────────
 
-4.1.1 Quick Background
+3.1.1 Quick Background
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   While reading this paper you may wish to take a crash dump on your
@@ -160,7 +151,7 @@
   automatically upon reboot. If not, run `savecore(8)' manually.
 
 
-4.1.2 Full Core Dump Procedure
+3.1.2 Full Core Dump Procedure
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   When a UNIX-like system such as FreeBSD encounters an unrecoverable
@@ -215,7 +206,7 @@
   And our core dump is complete.
 
 
-4.1.3 Full Core Dump Contents
+3.1.3 Full Core Dump Contents
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   The canonical form of core dump is the “full dump”. Full dumps are
@@ -275,7 +266,7 @@
   Table 3: `ehdr' ELF Header Format
 
 
-4.1.4 Minidump Procedure and Contents
+3.1.4 Minidump Procedure and Contents
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   FreeBSD 6.2 introduced a new form of core dump termed, “minidumps”.
@@ -341,7 +332,7 @@
      times but can be set with the sysctl `machdep.dump_retry_count'.
 
 
-4.1.5 Textdump Procedure and Contents
+3.1.5 Textdump Procedure and Contents
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   FreeBSD added a new type of dump, the `textdump(4)'. ``The textdump
@@ -396,7 +387,7 @@
   the rest of the machine independent dump code.
 
 
-4.2 Core Dumps in Mac OS X
+3.2 Core Dumps in Mac OS X
 ──────────────────────────
 
   Mac OS X is capable of creating compressed core dumps and dumping them
@@ -436,7 +427,7 @@
   error message.
 
 
-4.3 Core Dumps in Illumos
+3.3 Core Dumps in Illumos
 ─────────────────────────
 
   ``illumos is a free and open-source Unix operating system. It derives
@@ -464,7 +455,7 @@
   size of a dump on a running system[16].
 
 
-4.4 Backtrace.io
+3.4 Backtrace.io
 ────────────────
 
   “Backtrace is a company that is aiming [to improve] the post-mortem
@@ -511,7 +502,7 @@
   amounts of RAM. [22]
 
 
-5 The Future
+4 The Future
 ════════════
 
   There are several extensions to the FreeBSD core dump code that exist
@@ -524,7 +515,7 @@
   of modularized core dump code.
 
 
-5.1 `netdump' - Network Dump
+4.1 `netdump' - Network Dump
 ────────────────────────────
 
   Crash dumping over the network can be especially useful in embedded
@@ -540,7 +531,7 @@
   Network dumps have not yet made it into upstream FreeBSD.
 
 
-5.2 Compressed Dump
+4.2 Compressed Dump
 ───────────────────
 
   Modern systems often have several hundred gigabytes of RAM and will
@@ -560,7 +551,7 @@
   Compressed dumps have not yet made it into upstream FreeBSD.
 
 
-5.3 `minidumpsz' - Minidump Size Estimation
+4.3 `minidumpsz' - Minidump Size Estimation
 ───────────────────────────────────────────
 
   `minidumpsz' is a kernel module that can do an online estimation of
@@ -580,7 +571,7 @@
   not yet made it into upstream FreeBSD.
 
 
-5.4 Modularizing Dump Code
+4.4 Modularizing Dump Code
 ──────────────────────────
 
   Currently if one would like to implement features or fixes in the core
@@ -596,7 +587,7 @@
   FreeBSD.
 
 
-5.5 Dump to swap on zvol
+4.5 Dump to swap on zvol
 ────────────────────────
 
   Many users of FreeBSD use ZFS extensively. Though FreeBSD supports
@@ -611,7 +602,7 @@
   without re-imaging a machine.
 
 
-5.6 Live Dump
+4.6 Live Dump
 ─────────────
 
   The ability to take a core dump on an online system can be useful when
@@ -626,7 +617,7 @@
   much as possible.
 
 
-6 Acknowledgments
+5 Acknowledgments
 ═════════════════
 
   The author would like to thank Michael Dexter, for his initial
@@ -642,10 +633,10 @@
   community in general for making this day and paper possible.
 
 
-7 Appendix
+6 Appendix
 ══════════
 
-7.1 The Past: A Complete History of Core Dumps
+6.1 The Past: A Complete History of Core Dumps
 ──────────────────────────────────────────────
 
   The following sections list when different features of the core dump
@@ -654,7 +645,7 @@
   Research UNIX and then BSD through to present versions of FreeBSD.
 
 
-7.2 Core Dumps in UNIX
+6.2 Core Dumps in UNIX
 ──────────────────────
 
   Core dumping was initially a manual process. As documented in Version
@@ -664,7 +655,7 @@
   of code the public has access to.
 
 
-7.2.1 6th Edition UNIX
+6.2.1 6th Edition UNIX
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   In 6th Edition UNIX `crash(8)' shows how to manually take a core dump:
@@ -681,13 +672,13 @@
   `m45.s' give UNIX support for the PDP-11/40 and PDP-11/45.
 
 
-7.2.2 7th Edition UNIX
+6.2.2 7th Edition UNIX
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   7th Edition UNIX adds support for the PDP-11/70.
 
 
-7.2.3 UNIX/32V
+6.2.3 UNIX/32V
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   UNIX/32V was an early port of UNIX to the DEC VAX architecture making
@@ -697,17 +688,17 @@
   assembly.
 
 
-7.3 Core Dumps in BSD
+6.3 Core Dumps in BSD
 ─────────────────────
 
-7.3.1 1BSD & 2BSD
+6.3.1 1BSD & 2BSD
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   1BSD and 2BSD inherited their dump code directly from 6th Edition UNIX
   so it therefore supports the PDP-11/40 and PDP-11/45.
 
 
-7.3.2 3BSD
+6.3.2 3BSD
 ╌╌╌╌╌╌╌╌╌╌
 
   3BSD imports its dump code from UNIX/32V maintaining the name
@@ -718,7 +709,7 @@
   core dumps are awful and even uninterruptible!’’.
 
 
-7.3.3 4BSD
+6.3.3 4BSD
 ╌╌╌╌╌╌╌╌╌╌
 
   4BSD introduces a new feature to `doadump', printing tracing
@@ -728,7 +719,7 @@
   dumps to swap: “Support automatic dumps to paging area”.
 
 
-7.3.4 4.1BSD
+6.3.4 4.1BSD
 ╌╌╌╌╌╌╌╌╌╌╌╌
 
   Beginning in 4.1BSD `doadump()' is relegated to setting up the machine
@@ -744,29 +735,29 @@
   • In 4.1c2BSD changes VAX7ZZ references to VAX730
 
 
-7.3.5 4.2BSD
+6.3.5 4.2BSD
 ╌╌╌╌╌╌╌╌╌╌╌╌
 
   • no changes.
 
 
-7.3.6 4.3BSD
+6.3.6 4.3BSD
 ╌╌╌╌╌╌╌╌╌╌╌╌
 
-7.3.6.1 4.3 BSD-Tahoe
+6.3.6.1 4.3 BSD-Tahoe
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • Initial support is added for the ``tahoe’’ processor and and
     `doadump' is ported to the tahoe.
 
 
-7.3.6.2 4.3 BSD Net/1
+6.3.6.2 4.3 BSD Net/1
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • Same as 4.3-Tahoe
 
 
-7.3.6.3 4.3 BSD-Reno
+6.3.6.3 4.3 BSD-Reno
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • hp300 and i386 core dump support is added in
@@ -774,13 +765,13 @@
     respectively.
 
 
-7.3.6.4 4.3 BSD Net/2
+6.3.6.4 4.3 BSD Net/2
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • Same as Reno
 
 
-7.3.7 4.4BSD
+6.3.7 4.4BSD
 ╌╌╌╌╌╌╌╌╌╌╌╌
 
   • luna68k support added
@@ -789,74 +780,74 @@
   • sparc support added
 
 
-7.3.7.1 4.4-BSD Lite1 & 4.4-BSD Lite2
+6.3.7.1 4.4-BSD Lite1 & 4.4-BSD Lite2
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • Same as 4.4BSD – changes made due to AT&T UNIX System Laboratories
     (USL) lawsuit.
 
 
-7.3.8 386BSD
+6.3.8 386BSD
 ╌╌╌╌╌╌╌╌╌╌╌╌
 
-7.3.8.1 386BSD 0.0
+6.3.8.1 386BSD 0.0
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • Reduce support to i386 and hp300 support
 
 
-7.3.8.2 386BSD 0.1
+6.3.8.2 386BSD 0.1
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • hp300 code removed
 
 
-7.3.8.3 386BSD 0.1-patchkit
+6.3.8.3 386BSD 0.1-patchkit
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • Same as 386BSD 0.1
 
 
-7.4 Core Dumps in FreeBSD
+6.4 Core Dumps in FreeBSD
 ─────────────────────────
 
-7.4.1 FreeBSD 1.0
+6.4.1 FreeBSD 1.0
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   • i386 support from 386BSD-0.1-patchkit
 
 
-7.4.2 FreeBSD 2.0.0
+6.4.2 FreeBSD 2.0.0
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
-7.4.2.1 FreeBSD 2.0.0
+6.4.2.1 FreeBSD 2.0.0
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • `doadump()' no longer exists, though is mentioned in comments.
 
 
-7.4.2.2 FreeBSD 2.2.0
+6.4.2.2 FreeBSD 2.2.0
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • `dumpsys()' is placed inside `boot()' and `dumpsys()' in
     `kern_shutdown.c' because code was not seen as machine dependent.
 
 
-7.4.3 FreeBSD 3.0.0
+6.4.3 FreeBSD 3.0.0
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   • SMP support
   • alpha support
 
 
-7.4.4 FreeBSD 4.0.0
+6.4.4 FreeBSD 4.0.0
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   • Added print uptime before rebooting.
   • Better error message when dumps are not supported
 
 
-7.4.5 FreeBSD 5.0.0
+6.4.5 FreeBSD 5.0.0
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   • Added IA64, sparc64, and pc98 support.
@@ -866,10 +857,10 @@
     initialisation before single user mode
 
 
-7.4.6 FreeBSD 6.0.0
+6.4.6 FreeBSD 6.0.0
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
-7.4.6.1 FreeBSD 6.0.0
+6.4.6.1 FreeBSD 6.0.0
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • AMD64 and arm support added.
@@ -877,16 +868,16 @@
   • AMD64 and i386 bump their dump format to version 2.
 
 
-7.4.6.2 FreeBSD 6.2.0
+6.4.6.2 FreeBSD 6.2.0
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • minidump code added.
 
 
-7.4.7 FreeBSD 7.0.0
+6.4.7 FreeBSD 7.0.0
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
-7.4.7.1 FreeBSD 7.0.0
+6.4.7.1 FreeBSD 7.0.0
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • sun4v support added
@@ -894,20 +885,20 @@
   • alpha support is removed
 
 
-7.4.7.2 FreeBSD 7.1.0
+6.4.7.2 FreeBSD 7.1.0
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 
   • textdump code is added
 
 
-7.4.8 FreeBSD 8.0.0
+6.4.8 FreeBSD 8.0.0
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   • PowerPC support added.
   • mips support added.
 
 
-7.4.9 FreeBSD 9.0.0
+6.4.9 FreeBSD 9.0.0
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   • Merge common amd64/i386 dump code under `sys/x86' subtree.
@@ -916,7 +907,7 @@
   • Minidump v2
 
 
-7.4.10 FreeBSD 10.0.0
+6.4.10 FreeBSD 10.0.0
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   • On systems with SMP, CPUs other than the one processing the panic
@@ -924,7 +915,7 @@
     `kern.stop_scheduler_on_panic'
 
 
-7.4.11 FreeBSD 11.0.0
+6.4.11 FreeBSD 11.0.0
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   • RISC-V support added.
@@ -939,7 +930,7 @@
     dump header
 
 
-7.4.12 FreeBSD 12-CURRENT
+6.4.12 FreeBSD 12-CURRENT
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   • Support for encrypted kernel crash dumps added. `dumpon(8)' and
