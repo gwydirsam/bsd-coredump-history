@@ -51,7 +51,8 @@ research for this paper and can be found in the appendix.
 
 * 'TODO' list
 ** TODO Create Slides
-** TODO Add backtrace.io features
+** DONE Add backtrace.io features
+   CLOSED: [2017-02-04 Sat 07:42]
 ** TODO Add how to force a dump
 ** TODO Clean up notes
 ** DONE Finish Textdump Procedure and Contents
@@ -68,13 +69,17 @@ research for this paper and can be found in the appendix.
    CLOSED: [2017-01-14 Sat 11:22]
 ** TODO minidumpsz code needs publishing so I can reference it
 ** TODO Finish Conclusion
-** TODO Submit Finished Paper to AsiaBSD Con 2017
-   DEADLINE: <2017-02-04 Fri>
+** DONE Submit Finished Paper to AsiaBSD Con 2017
+   CLOSED: [2017-02-04 Sat 07:42] DEADLINE: <2017-02-04 Sat>
 ** DONE Submit to BSDCan
    CLOSED: [2017-01-19 Thu 10:58] DEADLINE: <2017-01-19 Thu>
 ** TODO Add Sandvine (projects/sv) Branch to history
 ** TODO Add description of =dumpon(8)=
-** TODO Add thanks:
-*** TODO Allan Jude - spelling
-*** TODO Daniel Nowacki - spelling, grammar and syntax
-*** TODO Chris Findeisen - phrasing suggestions
+** DONE Add thanks:
+   CLOSED: [2017-02-04 Sat 07:44]
+*** DONE Allan Jude - spelling
+    CLOSED: [2017-02-04 Sat 07:42]
+*** DONE Daniel Nowacki - spelling, grammar and syntax
+    CLOSED: [2017-02-04 Sat 07:42]
+*** DONE Chris Findeisen - phrasing suggestions
+    CLOSED: [2017-02-04 Sat 07:42]
