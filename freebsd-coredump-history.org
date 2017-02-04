@@ -13,7 +13,7 @@
 #+CREATOR: Emacs 25.1.1 (Org mode 8.3.5)
 #+LATEX_CLASS: article
 #+LATEX_CLASS_OPTIONS: [a4paper,article,twocolumn]
-#+LATEX_HEADER_EXTRA:
+#+LATEX_HEADER_EXTRA: \usepackage{usenix,epsfig,endnotes}
 #+DESCRIPTION:
 #+KEYWORDS:
 #+SUBTITLE:
@@ -286,6 +286,35 @@ research for this paper and can be found in the appendix.
 ** Core Dumps in UNIX                                              :noexport:
    There is no "UNIX" anymore...
 ** Core Dumps in FreeBSD
+*** Quick Background
+    While reading this paper you may wish to take a crash dump on your system
+    and play around with the features discussed. The following is a quick
+    "crash" course.
+
+    First configure the system dump device in =/etc/rc.conf= or using
+    =dumpon(8)= [fn:29]. The easiest way is to use \verb|dumpdev='AUTO'|, which
+    will set the =dumpdev= to the first configured swap device, make sure your
+    swap partition is large enough for a core dump, if using =dumpon(8)= use
+    swapinfo to find a suitable partition. Next, if you are using the default
+    =dumpdir=, make sure it exists and set permissions accordingly. Now, in
+    order to generate a kernel dump you will need to panic your kernel, there
+    are several ways to do this, including writing a program that calls
+    =panic(9)=, using dtrace to call panic or the simplest using the sysctl,
+    =sysctl debug.kdb.panic=1=. Note this will crash and reboot your system.
+
+    For those who prefer shell to English:
+
+#+begin_src sh
+ # mkdir /var/crash
+ # chmod 700 /var/crash
+ # swapinfo
+ # dumpon -v /dev/da0p2
+ # sysctl debug.kdb.panic=1
+#+end_src
+
+    If your =dumpdir= is configured correctly, =savecore(8)= will run
+    automatically upon reboot. If not, run =savecore(8)= manually.
+
 *** Full Core Dump Procedure
    When a UNIX-like system such as FreeBSD encounters an unrecoverable and
    unexpected error the kernel will "panic". Though the word panic has connotations
@@ -2592,6 +2621,8 @@ Differential Revision:	https://reviews.freebsd.org/D5848
 
         
 * Footnotes
+
+[fn:29] https://www.freebsd.org/doc/en/books/developers-handbook/kerneldebug.html
 
 [fn:28] https://documentation.backtrace.io/overview/
 

@@ -19,23 +19,14 @@
 ══════════
 
   Crash dumps, also known as core dumps, have been a part of BSD since
-  its beginnings in Research UNIX. A core dump is ``a copy of memory
-  that is saved on secondary storage by the kernel’’ for debugging a
-  system failure[1]. Even though 38 years have passed since `doadump()'
-  came about in UNIX/32V, core dumps are still needed and utilized in
-  much the same way they were then. Given this, one might assume the
-  core dump code changed little over time but, with some research, this
-  assumption has proven incorrect.
-
-  What has changed over time is where core dumps are sent to and what
-  processor architectures are supported. Previous to the advent of UNIX,
-  core dumps were printed to a line printer or punch cards. At the birth
-  of UNIX core dumps were made to magnetic tape and because UNIX only
-  supported the PDP-11, it was the only architecture supported for
-  dumps. Over time machine architecture support has evolved from
-  different PDP-11 models to hp300, i386 up to the present day with
-  AMD64 and ARM64. In addition, the type of dump device has changed from
-  tape to hard disk or another machine over a LAN.
+  its beginnings in Research UNIX. Though 38 years have passed since
+  `doadump()' came about in UNIX/32V, core dumps are still needed and
+  utilized in much the same way they were then. However, as underlying
+  assumptions about the ratio of swap to RAM have proven inappropriate
+  for modern systems, several extensions have been made by those who
+  needed core dumps on very large servers, or very small embedded
+  systems. Frustratingly these extensions have not made it to upstream
+  FreeBSD.
 
   The following paper begins with a quick background on what core dumps
   are and why operators might need them. Following that the current
@@ -65,7 +56,7 @@
   have been used to produce a core dump. In the earliest UNIXes magnetic
   tape was the only supported dump device but when hard disk support
   matured, swap space was used, obviating the need for changing out
-  tapes before a dump[2]. Modern and embedded systems continue to
+  tapes before a dump[1]. Modern and embedded systems continue to
   introduce new constraints that have motivated the need for newer
   methods of ex-filtrating a core dump from a faltering kernel.
 
@@ -73,7 +64,7 @@
   extensions to the core dumping facility. FreeBSD 6.2 introduced
   ``minidumps’’, a subset of a full dump that only consists of active
   kernel memory. FreeBSD 7.1’s `textdumps(4)' consist of the result of
-  debugger commands input interactivly in DDB or via script[3]. FreeBSD
+  debugger commands input interactivly in DDB or via script[2]. FreeBSD
   12-CURRENT introduced support for public-key cryptographic encryption
   of core dumps.
 
@@ -84,7 +75,7 @@
 
   Another BSD derived OS, Mac OS X has also introduced similar
   compression and network dumping features into their kernel albeit with
-  a distinct pedigree from FreeBSD[4][5].
+  a distinct pedigree from FreeBSD[3][4].
 
   The following paper will provide a historical survey of the dump
   facility itself, from its introduction in UNIX to its current form in
@@ -115,7 +106,7 @@
   dumping over the network to a server with disk space for modern core
   dumps. Because dumps contain all the contents of memory, any sensitive
   information in flight at the time of a crash appears in the dump. For
-  this reason encrypted dumps have been recently added to FreeBSD[6].
+  this reason encrypted dumps have been recently added to FreeBSD[5].
 
   While dealing with the above problems the author and his colleagues
   became closely familiar with the state of the core dump code and its
@@ -136,7 +127,40 @@
 4.1 Core Dumps in FreeBSD
 ─────────────────────────
 
-4.1.1 Full Core Dump Procedure
+4.1.1 Quick Background
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+  While reading this paper you may wish to take a crash dump on your
+  system and play around with the features discussed. The following is a
+  quick “crash” course.
+
+  First configure the system dump device in `/etc/rc.conf' or using
+  `dumpon(8)' [6]. The easiest way is to use \verb|dumpdev=’AUTO’|,
+  which will set the `dumpdev' to the first configured swap device, make
+  sure your swap partition is large enough for a core dump, if using
+  `dumpon(8)' use swapinfo to find a suitable partition. Next, if you
+  are using the default `dumpdir', make sure it exists and set
+  permissions accordingly. Now, in order to generate a kernel dump you
+  will need to panic your kernel, there are several ways to do this,
+  including writing a program that calls `panic(9)', using dtrace to
+  call panic or the simplest using the sysctl, `sysctl
+  debug.kdb.panic=1'. Note this will crash and reboot your system.
+
+  For those who prefer shell to English:
+
+  ┌────
+  │ # mkdir /var/crash
+  │ # chmod 700 /var/crash
+  │ # swapinfo
+  │ # dumpon -v /dev/da0p2
+  │ # sysctl debug.kdb.panic=1
+  └────
+
+  If your `dumpdir' is configured correctly, `savecore(8)' will run
+  automatically upon reboot. If not, run `savecore(8)' manually.
+
+
+4.1.2 Full Core Dump Procedure
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   When a UNIX-like system such as FreeBSD encounters an unrecoverable
@@ -191,7 +215,7 @@
   And our core dump is complete.
 
 
-4.1.2 Full Core Dump Contents
+4.1.3 Full Core Dump Contents
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   The canonical form of core dump is the “full dump”. Full dumps are
@@ -251,7 +275,7 @@
   Table 3: `ehdr' ELF Header Format
 
 
-4.1.3 Minidump Procedure and Contents
+4.1.4 Minidump Procedure and Contents
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   FreeBSD 6.2 introduced a new form of core dump termed, “minidumps”.
@@ -317,7 +341,7 @@
      times but can be set with the sysctl `machdep.dump_retry_count'.
 
 
-4.1.4 Textdump Procedure and Contents
+4.1.5 Textdump Procedure and Contents
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   FreeBSD added a new type of dump, the `textdump(4)'. ``The textdump
@@ -379,13 +403,13 @@
   locally, or over the network using a modified `tftpd(8)' from FreeBSD
   called `kdumpd(8)'[12]. Network dumping “has been present since Mac OS
   X 10.3 for PowerPC-based Macintosh systems, and since Mac OS X 10.4.7
-  for Intel-based Macintosh systems.”[4] In addition dumps over FireWire
+  for Intel-based Macintosh systems.”[3] In addition dumps over FireWire
   are supported for situations where the kernel panic is caused by the
   Ethernet driver or network code.
 
   In `xnu/osfmk/kdp/kdp_core.c' Mac OS X gzips its core dump before
   writing it out to disk, and is otherwise much like the FreeBSD “full
-  dump” procedure with one major difference besides its features[5].
+  dump” procedure with one major difference besides its features[4].
   Notably, Mac OS X uses a different executable image-format called
   Mach-O, as opposed to ELF, because OS X runs a hybrid Mach and BSD
   kernel called XNU[13].
@@ -443,8 +467,48 @@
 4.4 Backtrace.io
 ────────────────
 
-  • Features
-  • Snapshots
+  “Backtrace is a company that is aiming [to improve] the post-mortem
+  debugging process.” [17] Unlike the rest of this paper, Backtrace is
+  not an operating system’s dump process or its features, but a tool for
+  analyzing cores once they are generated.
+
+  Backtrace supports several languages for userspace core dumps,
+  including C, C++, Go, Python. Most importantly, Backtrace supports
+  FreeBSD kernel core dumps. This section will focus on FreeBSD kernel
+  core dump support.
+
+  Backtrace does not replace the FreeBSD core dump procedure, but is a
+  service that collects core dumps and helps the operator traige and fix
+  the bugs that cause those cores to be dumped.
+
+  Backtrace is a system made up of several parts: `coresnapd', a
+  snapshot generator; a set of analysis modules for automated debugging;
+  `coroner', an object store; a web interface and `hydra' its terminal
+  counterpart [18].
+
+  After a sucessful `savecore(8)', `coresnapd' and a set of companion
+  scripts create a “snapshot” of any cores generated and send it back to
+  `coroner' [19]. A snapshot contains a stack-trace across all threads,
+  active regions of memory, requested global variables, environment
+  information like virtual memory and CPU statistics, custom metadata
+  such as datacenter, and annotations created by the analysis modules
+  such as automated checking for a double `free()' of a pointer [18].
+  This results in a self-contained package that is smaller than a
+  minidump and can be analyzed on a machine with an environment
+  differing from the machine that created the original core [20]. Once
+  collected, Backtrace’s web interface can be used to categorize and
+  triage different faults by any metadata or by panic string, for
+  example. After triage, the web interface or `hydra' can be used to
+  analyze snapshots [21].
+
+
+
+  Backtrace has also sponsored work on FreeBSD itself, by improving
+  `kvm(3)'’s libkvm physical address lookup time from a linear time
+  lookup to a constant time lookup. This provides gains in runtime
+  complexity and space complexity of dealing with cores via
+  `crashinfo(8)' or `kgdb(1)' especially for those systems with large
+  amounts of RAM. [22]
 
 
 5 The Future
@@ -490,7 +554,7 @@
 
   Compressed dumps see a 6:1 to 14:1 compression ratio for core dumps
   with a slight penalty in the time required to write the dump
-  initially[17]. However the following `savecore(8)' on the next boot is
+  initially[23]. However the following `savecore(8)' on the next boot is
   faster, resulting in a faster dump and reboot sequence.
 
   Compressed dumps have not yet made it into upstream FreeBSD.
@@ -528,7 +592,7 @@
   systems.
 
   There is a proof of concept modularization of the dump code working on
-  FreeBSD 11.0p1[18]. This code has not yet made it into upstream
+  FreeBSD 11.0p1[24]. This code has not yet made it into upstream
   FreeBSD.
 
 
@@ -565,14 +629,17 @@
 6 Acknowledgments
 ═════════════════
 
-  The author would like to thank Michael Dexter for his help debugging
-  the original issues that led to our current combined knowledge of core
-  dumps. In addition, Rodney W. Grimes’ historical knowledge and help
-  reading code from PDP-11 assembly to modern C was invaluable.
+  The author would like to thank Michael Dexter, for his initial
+  prompting to write this paper and his help debugging the original
+  issues that led to our current combined knowledge of core dumps,
+  Rodney W. Grimes, for historical knowledge and help reading code from
+  PDP-11 assembly to modern C, and Allan Jude, Daniel Nowacki and Chris
+  Findeisen for finding and correct the many, many spelling, grammar and
+  syntax issues in earlier versions of this paper.
 
   The author thanks Deb Goodkin of the FreeBSD Foundation for her help
-  bringing the author into the FreeBSD community and lastly thanks the
-  FreeBSD community in general for making this day and paper possible.
+  bringing me into the FreeBSD community and lastly thanks the FreeBSD
+  community in general for making this day and paper possible.
 
 
 7 Appendix
@@ -886,21 +953,21 @@
 Footnotes
 ─────────
 
-[1] The Design and Implementation of the FreeBSD operating system by
-McKusick, Neville-Neil, and Watson
+[1] crash(8) - 3BSD
 
-[2] crash(8) - 3BSD
-
-[3]
+[2]
 [https://lists.freebsd.org/pipermail/freebsd-current/2007-December/081626.html]
 
-[4]
+[3]
 [https://developer.apple.com/library/content/technotes/tn2004/tn2118.html]
 
-[5]
+[4]
 [https://opensource.apple.com/source/xnu/xnu-3789.31.2/osfmk/kdp/kdp_core.c.auto.html]
 
-[6] [https://svnweb.freebsd.org/base?view=revision&revision=309818]
+[5] [https://svnweb.freebsd.org/base?view=revision&revision=309818]
+
+[6]
+[https://www.freebsd.org/doc/en/books/developers-handbook/kerneldebug.html]
 
 [7] `kern_shutdown.c' -
 [https://svnweb.freebsd.org/base/head/sys/kern/kern_shutdown.c?view=markup#l336]
@@ -929,6 +996,19 @@ McKusick, Neville-Neil, and Watson
 [16] [https://illumos.org/man/1m/dumpadm]
 
 [17]
+[https://backtrace.io/blog/supporting-freebsd-backtrace-and-bsd-now/]
+
+[18] [https://documentation.backtrace.io/overview/]
+
+[19] [https://documentation.backtrace.io/coresnap_integration/]
+
+[20] [https://backtrace.io/blog/whats-a-coredump/]
+
+[21] [https://documentation.backtrace.io/hydra/]
+
+[22] [https://svnweb.freebsd.org/base?view=revision&revision=302976]
+
+[23]
 [https://lists.freebsd.org/pipermail/freebsd-arch/2014-November/016231.html]
 
-[18] [https://people.freebsd.org/~rgrimes/]
+[24] [https://people.freebsd.org/~rgrimes/]
