@@ -50,10 +50,14 @@ In addition a complete history of core dumps in UNIX and BSD was produced as
 research for this paper and can be found in the appendix.
 
 * 'TODO' list
-** TODO Create Slides
+** DONE Create Slides
+   CLOSED: [2017-02-14 Tue 11:26]
+** TODO Outline Slides
+** TODO Flesh Out Slides
 ** DONE Add backtrace.io features
    CLOSED: [2017-02-04 Sat 07:42]
-** TODO Add how to force a dump
+** DONE Add how to force a dump
+   CLOSED: [2017-02-14 Tue 11:26]
 ** TODO Clean up notes
 ** DONE Finish Textdump Procedure and Contents
    CLOSED: [2017-01-14 Sat 14:11]
@@ -74,7 +78,8 @@ research for this paper and can be found in the appendix.
 ** DONE Submit to BSDCan
    CLOSED: [2017-01-19 Thu 10:58] DEADLINE: <2017-01-19 Thu>
 ** TODO Add Sandvine (projects/sv) Branch to history
-** TODO Add description of =dumpon(8)=
+** DONE Add description of =dumpon(8)=
+   CLOSED: [2017-02-14 Tue 11:26]
 ** DONE Add thanks:
    CLOSED: [2017-02-04 Sat 07:44]
 *** DONE Allan Jude - spelling
