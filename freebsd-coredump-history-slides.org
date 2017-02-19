@@ -1,8 +1,9 @@
-#+OPTIONS: ':t *:t -:t ::t <:t H:4 \n:nil ^:t arch:headline author:t c:nil
+#+OPTIONS: ':t *:t -:t ::t <:t H:2 \n:nil ^:t arch:headline author:t c:nil
 #+OPTIONS: creator:nil d:(not "LOGBOOK") date:t e:t email:nil f:t inline:t
 #+OPTIONS: num:t p:nil pri:nil prop:nil stat:t tags:t tasks:t tex:t timestamp:t
 #+OPTIONS: title:t toc:nil todo:nil |:t
 #+TITLE: The History and Future of Core Dumps in FreeBSD
+
 
 #+DATE: \today
 #+AUTHOR: Sam W. Gwydir, Texas A&M University =sam@samgwydir.com=
@@ -13,170 +14,285 @@
 #+CREATOR: Emacs 25.1.1 (Org mode 8.3.5)
 #+LATEX_CLASS: beamer
 #+LATEX_CLASS_OPTIONS: [bigger]
+# #+BEAMER_THEME: Montpellier
+#+BEAMER_THEME: Dresden
+#+LATEX_HEADER_EXTRA: \usecolortheme{beaver}
 #+LATEX_HEADER_EXTRA: \usepackage{epsfig,endnotes}
 #+DESCRIPTION:
 #+KEYWORDS:
 #+SUBTITLE:
-#+startup: bemaer
-#+BEAMER_FRAME_LEVEL: 2
-#+COLUMNS: %40ITEM %10BEAMER_env(Env) %9BEAMER_envargs(Env Args) %4BEAMER_col(Col) %10BEAMER_extra(Extra)
+#+startup: beamer
+#+BEAMER_FRAME_LEVEL: 1
+# #+COLUMNS: %40ITEM %10BEAMER_env(Env) %9BEAMER_envargs(Env Args) %4BEAMER_col(Col) %10BEAMER_extra(Extra)
 
 
-#+BEGIN_COMMENT
--Questions
+* Introduction
+** Who Am I
+  My name is Sam Gwydir
+  - I've used *nix for a little over 10 years
+  - OpenBSD and later FreeBSD around 2013
 
-Q: Are we going to focus on amd64 and x86?
+** Overview
+  There are three main sections of this talk:
+  - The Past
+    - Research UNIX v5 through FreeBSD 12-CURRENT
+  - The Present
+    - FreeBSD
+    - Illumos
+    - Mac OS X
+    - Backtrace.io
+  - The Future
+    - Core Dump Extensions
+** Background
+*** What is a Core Dump?
+   - Core Dump :: A machine readable form of the state of a machine at some point in time, usually after a =panic(9)=.
+*** Why do I want them?
+    - Operators can debug crashes offline; a production machine can go back online
+    - Allows archiving of crash data for later comparison
+    - Useful when crashes aren't predicted i.e. production 
+* The Past
+** The History
+   - A Comprehensive list of architectures that support core dumps, and related features
+   - Essentially the odyssey that =doadump()= has been through since UNIX/32V
+   - Starts at 5th Edition Research UNIX's =crash(8)=
+   - Ends at FreeBSD 12-CURRENT's Encrypted Dump
+** How to use the appendix for Research                            :noexport:
+   - First, find the feature you are looking into
+     - Example: minidump
+* The Present
+** Operating Systems 
+  - Core Dump Features in:
+    - FreeBSD
+    - Illumos
+    - Mac OS X
+** FreeBSD
+   - Full Dump
+     - A classic core dump -- the full contents of memory at the time of a crash
+   - Minidump
+     - Introduced in FreeBSD 6.2
+     - Contains only memory pages in use by kernel
+     - Much smaller than the full contents of memory
+   - Text Dump
+     - Introduced in FreeBSD 7.1
+     - Custom ddb scripting in lieu of a dump
+     - A small tar of text files
+** How to take a Core Dump in FreeBSD
+ #+begin_src sh
+  # mkdir /var/crash  # create the dumpdev
+  # chmod 700 /var/crash
+  # swapinfo # find a suitable swap partition
+  # dumpon -v /dev/da0p2
+  # sysctl debug.kdb.panic=1
+ #+end_src
+   - Notes: - You are purposely panicking your machine. Save your stuff.
 
-Outline
-- What is a core dump?
-- System 6
-- Crash(8)
-If the reason for the crash is not evident
-(see below for guidance on `evident')
-you may want to try to dump the system if you feel up to
-debugging.
-At the moment a dump can be taken only on magtape.
-With a tape mounted and ready,
-stop the machine, load address 44, and start.
-This should write a copy of all of core
-on the tape with an EOF mark.
+     # - If your =dumpdir= is configured correctly, =savecore(8)= will run
+     # automatically upon reboot. If not, run =savecore(8)= manually.
 
-- 3BSD
-added to crash(8) in 3BSD: (Someday the LSI-11 will do this automatically.)
+     # - You will find a core dump in =/var/crash=
 
-root@freebsd-current:~/src/unix-history-repo # git branch
-  BSD-3-Snapshot-Development
-root@freebsd-current:~/src/unix-history-repo # git log usr/src/sys/sys/locore.s
-commit 78bb3f5f916ebc2ee66d7dbfbe93db9a97e6d3ca
-Author: Ozalp Babaoglu <ozalp@ucbvax.Berkeley.EDU>
-Date:   Wed Jan 16 00:08:32 1980 -0800
+** How Core Dumps Work
+   - important part: written backwards
+** Illumos
+   Not technically a BSD but the features are important
+   - Online dump size estimation
+     - Includes different calculations for settings, e.g. compression
+   - Compressed Dump
+     - gzip compression
+   - Dump to Swap on zvol
+     - Versatility of zvols vs partitions
+   - Live Dump
+     - Useful for production machines where interactive debugging is not possible
+     - Especially for debugging hangs
+** Mac OS X
+   - Compressed Dump
+     - gzip compression
+   - netdump
+     - Using a modified =tftpd(8)= from FreeBSD!
+** Tools
+  - Backtrace.io
+* The Future
+** Extant Core Dump Extensions
+    - Compressed Dump
+      - 6:1 to 14:1 compression ratio
+      - A 32 GB Core becomes 5.34 GB!
+    - Core Dump Extensions not in FreeBSD
+      - netdump
+        - Holding on since FreeBSD 4.x
+      - Dump Size Estimation
+        - =minidumpsz= for FreeBSD 10 and 11
+      - Modular Dump Code
+        - Embedded systems
+        - Rod Grimes
+** Proposed Core Dump Extensions
+      - Dump to Swap on zvol
+        - The ZFS way
+      - Live Dump
+        - Gauge interest
+* Conclusion
+** Links
+   Thank you for coming!
+  - github.com/gwydirsam/bsd-coredump-history
+  - github.com/dspinellis/unix-history-repo
 
-    BSD 3 development
-    Work on file usr/src/sys/sys/locore.s
+   
 
-    Co-Authored-By: Bill Joy <wnj@ucbvax.Berkeley.EDU>
-    Co-Authored-By: Juan Porcar <x-jp@ucbvax.Berkeley.EDU>
-    Synthesized-from: 3bsd
-root@freebsd-current:~/src/unix-history-repo # grep -A20 doadump usr/src/sys/sys/locore.s
-	.globl	doadump
-doadump:
-	movl	sp,dumpstack		# save stack pointer
-	movab	dumpstack,sp		# reinit stack
-	mfpr	$PCBB,-(sp)		# save u-area pointer
-	mfpr	$MAPEN,-(sp)		# save value
-	mfpr	$IPL,-(sp)		# ...
-	mtpr	$0,$MAPEN		# turn off memory mapping
-	mtpr	$HIGH,$IPL		# disable interrupts
-	pushr	$0x3fff			# save regs 0 - 13
-	calls	$0,_dump		# produce dump
-	halt
 
-	.data
-	.align	2
-	.globl	dumpstack
-	.space	58*4			# separate stack for tape dumps
-- 4.2BSD
-  - /usr/src/sys/vax/vax/machdep.c
-  - doadump and dumpsys
-  - 'doadump() { dumpsys(); }'
-- FreeBSD Dumping History
-  - The Design and Implementation of FreeBSD
-  - Canonical BSD Unix core memory dumping: All memory to a
-       pre-designated device
-    - 64kb indent, starts dumping at END of dump dev in case you
-         start swapping early in boot before you retrieve the dump.
-         4.2BSD?
-    - kern/kern\_shutdown.c (Traditional)
-- FreeBSD Dumping Present
-  - Dumps on machines with 300 GB of RAM+ can be huge
-    - Swap partitions need not be so large for any other reason
-  - Updated FreeBSD dumping
-    - 64kb indent, dump from end preserved (verify)
-      - sys/kern/kern\_dump.c
-      - sys/kern/kern\_shutdown.c
-      - sys/amd64/amd64/machdep\_minidump.c
-      - and rarely bits might be in sys/amd64/amd64/pmap.c
-    - “Minidumps” of only active kernel pages
-    - Dump time DDB scripting
-      - DDB must be built into the kernel
-      - No performance penalty but...
-      - Security risk with the CTRL-ALT-ESC shortcut
-        - Can be disabled at compile time, FreeNAS does this
-- "No, as I recall on an IBM 360 you could pick line printer or punched cards... lol"
-- It may be worth looking at the games Linux plays. Reserve space for a kernel, load that kernel...
-- Perhaps: Paper -> Tape -> Swap -> New fancy stuff.
-- "https://en.wikipedia.org/wiki/Core_dump    The background starts off with core dumps were paper printouts[6]... "
-- So here’s Bell 32/V doadump: https://github.com/dspinellis/unix-history-repo/blob/Bell-32V-Snapshot-Development/usr/src/sys/sys/locore.s
-- "IIRC many systems from the early 70's and before did crash dumps to printer.  I am not sure when the idea of saving the bits in a machine readable form for analisys after coming back up  started."
-- [12/23/16, 16:02:56] Michael Dexter: "Well in 1979 I can remeber doing a crash dump on a Harris S/210 24 bit machine to the line printer in octal, it only took 2 hours to print...."
-[12/23/16, 16:03:35] gwydirsam: -rgrimes?
-- From Rod: "[12/23/16 1:51:05 PM] Rodney Grimes: I would say dumps to swap/page area was soon to come:   7. Reboot fixups
- Support automatic dumps to paging area
-[12/23/16 1:51:24 PM] Rodney Grimes: That is on a list of TODO's in https://github.com/dspinellis/unix-history-repo/blob/BSD-4-Snapshot-Development/usr/src/sys/sys/TODO "
-- multics
-  - http://multicians.org/mgf.html#fdump
-- OS X dump server
-- https://developer.apple.com/library/content/technotes/tn2004/tn2118.html
+ #+BEGIN_COMMENT
+ -Questions
+
+ Q: Are we going to focus on amd64 and x86?
+
+ Outline
+ - What is a core dump?
+ - System 6
+ - Crash(8)
+ If the reason for the crash is not evident
+ (see below for guidance on `evident')
+ you may want to try to dump the system if you feel up to
+ debugging.
+ At the moment a dump can be taken only on magtape.
+ With a tape mounted and ready,
+ stop the machine, load address 44, and start.
+ This should write a copy of all of core
+ on the tape with an EOF mark.
+
+ - 3BSD
+ added to crash(8) in 3BSD: (Someday the LSI-11 will do this automatically.)
+
+ root@freebsd-current:~/src/unix-history-repo # git branch
+   BSD-3-Snapshot-Development
+ root@freebsd-current:~/src/unix-history-repo # git log usr/src/sys/sys/locore.s
+ commit 78bb3f5f916ebc2ee66d7dbfbe93db9a97e6d3ca
+ Author: Ozalp Babaoglu <ozalp@ucbvax.Berkeley.EDU>
+ Date:   Wed Jan 16 00:08:32 1980 -0800
+
+     BSD 3 development
+     Work on file usr/src/sys/sys/locore.s
+
+     Co-Authored-By: Bill Joy <wnj@ucbvax.Berkeley.EDU>
+     Co-Authored-By: Juan Porcar <x-jp@ucbvax.Berkeley.EDU>
+     Synthesized-from: 3bsd
+ root@freebsd-current:~/src/unix-history-repo # grep -A20 doadump usr/src/sys/sys/locore.s
+	 .globl	doadump
+ doadump:
+	 movl	sp,dumpstack		# save stack pointer
+	 movab	dumpstack,sp		# reinit stack
+	 mfpr	$PCBB,-(sp)		# save u-area pointer
+	 mfpr	$MAPEN,-(sp)		# save value
+	 mfpr	$IPL,-(sp)		# ...
+	 mtpr	$0,$MAPEN		# turn off memory mapping
+	 mtpr	$HIGH,$IPL		# disable interrupts
+	 pushr	$0x3fff			# save regs 0 - 13
+	 calls	$0,_dump		# produce dump
+	 halt
+
+	 .data
+	 .align	2
+	 .globl	dumpstack
+	 .space	58*4			# separate stack for tape dumps
+ - 4.2BSD
+   - /usr/src/sys/vax/vax/machdep.c
+   - doadump and dumpsys
+   - 'doadump() { dumpsys(); }'
+ - FreeBSD Dumping History
+   - The Design and Implementation of FreeBSD
+   - Canonical BSD Unix core memory dumping: All memory to a
+        pre-designated device
+     - 64kb indent, starts dumping at END of dump dev in case you
+          start swapping early in boot before you retrieve the dump.
+          4.2BSD?
+     - kern/kern\_shutdown.c (Traditional)
+ - FreeBSD Dumping Present
+   - Dumps on machines with 300 GB of RAM+ can be huge
+     - Swap partitions need not be so large for any other reason
+   - Updated FreeBSD dumping
+     - 64kb indent, dump from end preserved (verify)
+       - sys/kern/kern\_dump.c
+       - sys/kern/kern\_shutdown.c
+       - sys/amd64/amd64/machdep\_minidump.c
+       - and rarely bits might be in sys/amd64/amd64/pmap.c
+     - “Minidumps” of only active kernel pages
+     - Dump time DDB scripting
+       - DDB must be built into the kernel
+       - No performance penalty but...
+       - Security risk with the CTRL-ALT-ESC shortcut
+         - Can be disabled at compile time, FreeNAS does this
+ - "No, as I recall on an IBM 360 you could pick line printer or punched cards... lol"
+ - It may be worth looking at the games Linux plays. Reserve space for a kernel, load that kernel...
+ - Perhaps: Paper -> Tape -> Swap -> New fancy stuff.
+ - "https://en.wikipedia.org/wiki/Core_dump    The background starts off with core dumps were paper printouts[6]... "
+ - So here’s Bell 32/V doadump: https://github.com/dspinellis/unix-history-repo/blob/Bell-32V-Snapshot-Development/usr/src/sys/sys/locore.s
+ - "IIRC many systems from the early 70's and before did crash dumps to printer.  I am not sure when the idea of saving the bits in a machine readable form for analisys after coming back up  started."
+ - [12/23/16, 16:02:56] Michael Dexter: "Well in 1979 I can remeber doing a crash dump on a Harris S/210 24 bit machine to the line printer in octal, it only took 2 hours to print...."
+ [12/23/16, 16:03:35] gwydirsam: -rgrimes?
+ - From Rod: "[12/23/16 1:51:05 PM] Rodney Grimes: I would say dumps to swap/page area was soon to come:   7. Reboot fixups
+  Support automatic dumps to paging area
+ [12/23/16 1:51:24 PM] Rodney Grimes: That is on a list of TODO's in https://github.com/dspinellis/unix-history-repo/blob/BSD-4-Snapshot-Development/usr/src/sys/sys/TODO "
+ - multics
+   - http://multicians.org/mgf.html#fdump
+ - OS X dump server
+ - https://developer.apple.com/library/content/technotes/tn2004/tn2118.html
  
-- FreeBSD Dumping Future
-  - Netdumps
-  - Compressed Dumps
-  - Encrypted Dumps
-  - New features at various stages of integration
-    - Netdumps
-      - Duke University code from long ago
-      - Picked up by Ed Maste at Sandvine, dropped
-      - Picked up by Isilon
-        - Added compression code? Picked it up
-      - Modular...
-    - Encryption - landed in head 12/10/2016 (Verify)
+ - FreeBSD Dumping Future
+   - Netdumps
+   - Compressed Dumps
+   - Encrypted Dumps
+   - New features at various stages of integration
+     - Netdumps
+       - Duke University code from long ago
+       - Picked up by Ed Maste at Sandvine, dropped
+       - Picked up by Isilon
+         - Added compression code? Picked it up
+       - Modular...
+     - Encryption - landed in head 12/10/2016 (Verify)
 
-#+END_COMMENT
+ #+END_COMMENT
 
-# \pagebreak
-# \onecolumn
+ # \pagebreak
+ # \onecolumn
 
-# \tableofcontents
-# \listoftables
+ # \tableofcontents
+ # \listoftables
 
-# \twocolumn
+ # \twocolumn
 
-# \subsection*{Abstract}
+ # \subsection*{Abstract}
 
-# Crash dumps, also known as core dumps, have been a part of BSD since its
-# beginnings in Research UNIX. Though 38 years have passed since =doadump()= came
-# about in UNIX/32V, core dumps are still needed and utilized in much the same way
-# they were then. However, as underlying assumptions about the ratio of swap to
-# RAM have proven inappropriate for modern systems, several extensions have been
-# made by those who needed core dumps on very large servers, or very small
-# embedded systems. Frustratingly these extensions have not made it to upstream
-# FreeBSD.
+ # Crash dumps, also known as core dumps, have been a part of BSD since its
+ # beginnings in Research UNIX. Though 38 years have passed since =doadump()= came
+ # about in UNIX/32V, core dumps are still needed and utilized in much the same way
+ # they were then. However, as underlying assumptions about the ratio of swap to
+ # RAM have proven inappropriate for modern systems, several extensions have been
+ # made by those who needed core dumps on very large servers, or very small
+ # embedded systems. Frustratingly these extensions have not made it to upstream
+ # FreeBSD.
 
-# The following paper begins with a quick background on what core dumps are and
-# why operators might need them. Following that the current state of the core dump
-# facility and some of the more common extensions in use are examined. We conclude
-# with a call to action for upstreaming these extensions and modularizing the core
-# dump code such that different methods of core dump can be dynamically loaded
-# into the kernel on demand.
+ # The following paper begins with a quick background on what core dumps are and
+ # why operators might need them. Following that the current state of the core dump
+ # facility and some of the more common extensions in use are examined. We conclude
+ # with a call to action for upstreaming these extensions and modularizing the core
+ # dump code such that different methods of core dump can be dynamically loaded
+ # into the kernel on demand.
 
-# In addition a complete history of core dumps in UNIX and BSD was produced as
-# research for this paper and can be found in the appendix.
+ # In addition a complete history of core dumps in UNIX and BSD was produced as
+ # research for this paper and can be found in the appendix.
 
-# # A core dump is ``a copy of memory that is saved on
-# # secondary storage by the kernel'' for debugging a system failure[fn:1]. Even though
-# # 38 years have passed since =doadump()= came about in UNIX/32V, core dumps are
-# # still needed and utilized in much the same way they were then. Given this, one
-# # might assume the core dump code changed little over time but, with some
-# # research, this assumption has proven incorrect.
+ # # A core dump is ``a copy of memory that is saved on
+ # # secondary storage by the kernel'' for debugging a system failure[fn:1]. Even though
+ # # 38 years have passed since =doadump()= came about in UNIX/32V, core dumps are
+ # # still needed and utilized in much the same way they were then. Given this, one
+ # # might assume the core dump code changed little over time but, with some
+ # # research, this assumption has proven incorrect.
 
-# # What has changed over time is where core dumps are sent to and what processor
-# # architectures are supported. Previous to the advent of UNIX, core dumps were
-# # printed to a line printer or punch cards. At the birth of UNIX core dumps were
-# # made to magnetic tape and because UNIX only supported the PDP-11, it was the
-# # only architecture supported for dumps. Over time machine architecture support
-# # has evolved from different PDP-11 models to hp300, i386 up to the present day
-# # with AMD64 and ARM64. In addition, the type of dump device has changed from tape
-# # to hard disk or another machine over a LAN.
+ # # What has changed over time is where core dumps are sent to and what processor
+ # # architectures are supported. Previous to the advent of UNIX, core dumps were
+ # # printed to a line printer or punch cards. At the birth of UNIX core dumps were
+ # # made to magnetic tape and because UNIX only supported the PDP-11, it was the
+ # # only architecture supported for dumps. Over time machine architecture support
+ # # has evolved from different PDP-11 models to hp300, i386 up to the present day
+ # # with AMD64 and ARM64. In addition, the type of dump device has changed from tape
+ # # to hard disk or another machine over a LAN.
 
 
 * Paper                                                            :noexport:
@@ -1643,7 +1759,7 @@ doadump:
       6th Edition UNIX's core dump procedure is defined in =m40.s= and
       =m45.s= give UNIX support for the PDP-11/40 and PDP-11/45.
 ***** Notes                                                        :noexport:
- =/usr/sys/conf/m40.s=
+      =/usr/sys/conf/m40.s=
      # https://github.com/dspinellis/unix-history-repo/blob/Research-V6-Snapshot-Development/usr/sys/conf/m40.s
      #+BEGIN_SRC asm
      .globl	dump
