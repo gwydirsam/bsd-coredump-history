@@ -612,11 +612,11 @@ research for this paper and can be found in the appendix.
     |---+---------------+-----------------------------|
     | / | >             | <                           |
     |   | Leader        | See Table [[tab:kdhheader]] |
-    |   | =ddb.txt=     | Captured DDB output         |
-    |   | =config.txt=  | Kernel configuration        |
-    |   | =msgbuf.txt=  | Kernel message buffer       |
-    |   | =panic.txt=   | Kernel panic message        |
     |   | =version.txt= | Kernel version string       |
+    |   | =panic.txt=   | Kernel panic message        |
+    |   | =msgbuf.txt=  | Kernel message buffer       |
+    |   | =config.txt=  | Kernel configuration        |
+    |   | =ddb.txt=     | Captured DDB output         |
     |   | Trailer       | See Table [[tab:kdhheader]] |
     |---+---------------+-----------------------------|
 
