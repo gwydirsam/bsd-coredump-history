@@ -3,8 +3,6 @@
 #+OPTIONS: num:t p:nil pri:nil prop:nil stat:t tags:t tasks:t tex:t timestamp:t
 #+OPTIONS: title:t toc:nil todo:nil |:t
 #+TITLE: The History and Future of Core Dumps in FreeBSD
-
-
 #+DATE: \today
 #+AUTHOR: Sam W. Gwydir, Texas A&M University =sam@samgwydir.com=
 #+EMAIL: sam@samgwydir.com
@@ -13,29 +11,34 @@
 #+EXCLUDE_TAGS: noexport
 #+CREATOR: Emacs 25.1.1 (Org mode 8.3.5)
 #+LATEX_CLASS: beamer
-#+LATEX_CLASS_OPTIONS: [bigger]
+#+LATEX_CLASS_OPTIONS: [smaller]
 # #+BEAMER_THEME: Montpellier
 #+BEAMER_THEME: Dresden
 #+LATEX_HEADER_EXTRA: \usecolortheme{beaver}
 #+LATEX_HEADER_EXTRA: \usepackage{epsfig,endnotes}
+#+LATEX_HEADER_EXTRA: \setbeamertemplate{caption}[numbered]
 #+DESCRIPTION:
 #+KEYWORDS:
 #+SUBTITLE:
 #+startup: beamer
 #+BEAMER_FRAME_LEVEL: 1
-# #+COLUMNS: %40ITEM %10BEAMER_env(Env) %9BEAMER_envargs(Env Args) %4BEAMER_col(Col) %10BEAMER_extra(Extra)
-
 
 * Introduction
-** Who Am I
+** Who Am I?
   My name is Sam Gwydir
-  - I've used *nix for a little over 10 years
-  - OpenBSD and later FreeBSD around 2013
+  - Texas A&M University - Graduating in May
+  - Computer Engineering/Computer Science & Mathematics
+  - I've used *NIX for about 12 years
+  - OpenBSD, and later FreeBSD for about 4
 
 ** Overview
-  There are three main sections of this talk:
+  - +Who Am I?+
+  - Background
+    - What is a Coredump?
+    - Procedure
+    - Tutorial
   - The Past
-    - Research UNIX v5 through FreeBSD 12-CURRENT
+    - Timelines
   - The Present
     - FreeBSD
     - Illumos
@@ -43,58 +46,145 @@
     - Backtrace.io
   - The Future
     - Core Dump Extensions
-** Background
-*** What is a Core Dump?
+      - Modular Dump Code
+      - netdump
+      - =minidumpsz=
+      - Compressed Dump
+
+* Background
+** What is a Core Dump?
    - Core Dump :: A machine readable form of the state of a machine at some point in time, usually after a =panic(9)=.
-*** Why do I want them?
-    - Operators can debug crashes offline; a production machine can go back online
-    - Allows archiving of crash data for later comparison
-    - Useful when crashes aren't predicted i.e. production 
-* The Past
-** The History
-   - A Comprehensive list of architectures that support core dumps, and related features
-   - Essentially the odyssey that =doadump()= has been through since UNIX/32V
-   - Starts at 5th Edition Research UNIX's =crash(8)=
-   - Ends at FreeBSD 12-CURRENT's Encrypted Dump
-** How to use the appendix for Research                            :noexport:
-   - First, find the feature you are looking into
-     - Example: minidump
-* The Present
-** Operating Systems 
-  - Core Dump Features in:
-    - FreeBSD
-    - Illumos
-    - Mac OS X
-** FreeBSD
-   - Full Dump
-     - A classic core dump -- the full contents of memory at the time of a crash
-   - Minidump
-     - Introduced in FreeBSD 6.2
-     - Contains only memory pages in use by kernel
-     - Much smaller than the full contents of memory
-   - Text Dump
-     - Introduced in FreeBSD 7.1
-     - Custom ddb scripting in lieu of a dump
-     - A small tar of text files
+   - Useful for debugging both userspace programs and the kernel -- we will focus on the kernel today.
+   - Written using various methods to various over the years
+** General Dump Procedure (4.1 BSD - FreeBSD CURRENT)
+   [[file:images/dump_process.png]]
+   - Started by a =panic(9)=, ~reboot -d~
+     - ~sysctl debug.kdb.panic=1~
+     - ~dtrace -w -n 'BEGIN{ panic();}'~
+   - =dumpsys()= lands all/part of memory on swap in a particular format
+   - On reboot, =savecore(8)= writes dump to dumpdir for analysis
 ** How to take a Core Dump in FreeBSD
+   - You are purposely panicking your machine. 
+   - Do this in a VM!
  #+begin_src sh
-  # mkdir /var/crash  # create the dumpdev
-  # chmod 700 /var/crash
-  # swapinfo # find a suitable swap partition
-  # dumpon -v /dev/da0p2
-  # sysctl debug.kdb.panic=1
+  root@:~ # sysrc dumpdev="AUTO" dumpdir="/var/crash"
+  root@:~ # mkdir /var/crash # create the dumpdir
+  root@:~ # chmod 700 /var/crash  # fix permissions
+  root@:~ # # for text dump: sysctl debug.ddb.textdump.pending=1 
+  root@:~ # sysctl debug.kdb.panic=1 
  #+end_src
-   - Notes: - You are purposely panicking your machine. Save your stuff.
 
      # - If your =dumpdir= is configured correctly, =savecore(8)= will run
      # automatically upon reboot. If not, run =savecore(8)= manually.
 
      # - You will find a core dump in =/var/crash=
+** Overview
+  - +Who Am I?+
+  - +Background+
+  - The Past
+    - Timelines
+  - The Present
+    - FreeBSD
+    - Illumos
+    - Mac OS X
+    - Backtrace.io
+  - The Future
+    - Core Dump Extensions
+      - Modular Dump Code
+      - netdump
+      - =minidumpsz=
+      - Compressed Dump
 
-** How Core Dumps Work
-   - important part: written backwards
+* The Past
+** The History
+   - The Odyssey of =doadump()=
+   - Starts at 6th Edition Research UNIX's =crash(8)=
+   - Ends at FreeBSD 12-CURRENT's Encrypted Dump
+   - Turn to the Appendix for a more in depth history
+     - Includes architecture support
+     - Feature changes and larger bug fixes
+   - For even more depth, go to the org-mode file on github.
+     - Includes commits, mailing list emails, copious notes.
+** Core Dump Output Format Time Line
+   #+CAPTION: Core Dump Types
+   [[file:images/coredump_output.png]]
+#+BEGIN_QUOTE
+  "Well in 1979 I can remember doing a crash dump on a Harris S/210 24 bit
+  machine to the line printer in octal, it only took 2 hours to print...." - rgrimes
+#+END_QUOTE
+** FreeBSD Core Dump Extension
+   #+CAPTION: Core Dump Extension Timeline
+   [[file:images/coredump_extension.png]]
+** Overview
+  - +Who Am I?+
+  - +Background+
+  - +The Past+
+  - The Present
+    - FreeBSD
+    - Illumos
+    - Mac OS X
+    - Backtrace.io
+  - The Future
+    - Core Dump Extensions
+      - Modular Dump Code
+      - netdump
+      - =minidumpsz=
+      - Compressed Dump
+
+* The Present
+** Operating Systems                                               :noexport:
+** What is a Core Dump?
+*** Two Types:
+    - Full Dump :: Full contents of memory. Current procedure dates to 4.1 BSD. If you need help with your PDP-11 instructions are in the appendix.
+    - Minidump :: Only active kernel pages are dumped. Added By Peter Wemm in FreeBSD 6.2. The default as of FreeBSD 7.0.
+*** What is inside?
+    | =info=   | Metadata about dump (time, panic string, hostname)  |
+    | =core.txt= | System info (backtrace, ps, vmstat, netstat, fstat) |
+    | =vmcore= | core itself                                         | 
+** Full Dump On-Disk Format
+   #+CAPTION: Full Dump Format
+   [[file:images/fulldump.png]]
+   - Full Dump (FreeBSD 6.0)
+     - A classic core dump -- the full contents of memory at the time of a crash
+     - ELF Format (a.out previous to FreeBSD 6.0)
+** Minidump On-Disk Format
+   #+CAPTION: Mini Dump Format
+   [[file:images/minidump.png]]
+   - Minidump (FreeBSD 6.2) - Peter Wemm
+     - Contains only memory pages in use by kernel
+     - Much smaller than the full contents of memory, modern dumps can still be fairly large
+     - Custom "minidump" Format
+** What is a Text Dump?
+   - =textdump(4)= :: "The textdump facility allows the capture of kernel	debugging information
+     to	disk in	a human-readable rather	than the machine-readable form normally used	with kernel memory dumps and minidumps."
+   -  Added by Robert Watson in FreeBSD 7.1.
+*** What is inside?
+    - Other files are easily added with a small patch
+    | =version.txt= | Kernel version string       |
+    | =panic.txt=   | Kernel panic message        |
+    | =msgbuf.txt=  | Kernel message buffer       |
+    | =config.txt=  | Kernel configuration        |
+    | =ddb.txt=     | Captured DDB output         |
+** Text Dump On-Disk Format
+   #+CAPTION: Text Dump Format
+   [[file:images/textdump.png]]
+   - Text Dump (FreeBSD 7.1) - Robert Watson
+     - Custom ddb scripting in lieu of a dump
+     - Written backwards because size is unknown a priori.
+     - USTAR format
+** Core Dumps vs Textdumps
+*** Both
+    - Useful when crashes aren't predicted i.e. production 
+    - Operators can debug crashes offline
+    - Allows archiving of crash data for later comparison
+*** Core Dumps
+    - Do not need to know what you are looking for ahead of time
+    - Need source tree, debug symbols and built kernel for analysis
+*** Text Dumps
+    - Less Complete but much smaller (A few MB vs Many GB)
+    - Sometimes easier to extract information using DDB over kgdb.
 ** Illumos
-   Not technically a BSD but the features are important
+   Not a BSD but the features are alluring
    - Online dump size estimation
      - Includes different calculations for settings, e.g. compression
    - Compressed Dump
@@ -105,37 +195,88 @@
      - Useful for production machines where interactive debugging is not possible
      - Especially for debugging hangs
 ** Mac OS X
+   - Very different from the BSD dump procedure
+     - Mach-O
+     - Local or remote (network or Firewire)
+   - netdump - =kdumpd(8)=
+     - Using a modified =tftpd(8)= from FreeBSD!
    - Compressed Dump
      - gzip compression
-   - netdump
-     - Using a modified =tftpd(8)= from FreeBSD!
-** Tools
-  - Backtrace.io
+     - Both local and using =kdumpd(8)=.
+   - Full Procedure in paper
+** Backtrace.io
+   - Backtrace.io curates kernel and userspace cores
+   - Snapshots allow for debugging on a laptop instead on crashed machine
+     - Snapshots use automation to choose relevant sections of dump
+   - Allows for asking questions like: 
+     - Which panic is most common? 
+     - Correlated by datacenter? Storage Controller? Hard Drive Model? Timestamp?
+** Overview
+  - +Who Am I?+
+  - +Background+
+  - +The Past+
+  - +The Present+
+  - The Future
+    - Core Dump Extensions
+      - Modular Dump Code
+      - netdump
+      - =minidumpsz=
+      - Compressed Dump
 * The Future
 ** Extant Core Dump Extensions
-    - Compressed Dump
-      - 6:1 to 14:1 compression ratio
-      - A 32 GB Core becomes 5.34 GB!
-    - Core Dump Extensions not in FreeBSD
-      - netdump
-        - Holding on since FreeBSD 4.x
-      - Dump Size Estimation
-        - =minidumpsz= for FreeBSD 10 and 11
       - Modular Dump Code
         - Embedded systems
-        - Rod Grimes
+        - Mix and match features (compression but no netdump)
+        - rgrimes@ for info
+      - netdump
+        - Started at Duke by Darrell Anderson
+        - Holding on since FreeBSD 4.x (~2004)
+        - Continued at Sandvine and then Isilon
+        - Almost part of FreeBSD 9.0
+        - markj@ for info
+      - =minidumpsz= - minidump size estimation
+      - Compressed Dump
+** =minidumpsz=
+      #+begin_src sh
+        % sudo sh minidumpsize_10.1.sh
+        debug.mini_dump_size: 138127282176 # 138.1 GB(!!!!)
+      #+end_src
+      - Dump Size Estimation
+      - A "no op" version of the minidump code as a kernel module
+        - =minidumpsz= for FreeBSD 10 and 11
+        - Should be upstreamed soon 
+        - Email for binary (rgrimes@ or sam@samgwydir.com)
+** Compressed Dump
+   [[file:images/save_compression.png]]
+   # [[file:images/savecore_compression.png]]
+   - "Save Compression" 
+     - gzip dump on the fly before landing in swap
+   - Compression Ratio 6:1 to 14:1
+   - A 32 GB Core becomes 5.34 GB!
+   - Fixing the patch so it applies to FreeBSD 12 after encrypted dump will take some work
 ** Proposed Core Dump Extensions
-      - Dump to Swap on zvol
-        - The ZFS way
+      - Dump to swap on zvol
+        - gibbs@ offered to mentor me
       - Live Dump
         - Gauge interest
 * Conclusion
+** How to use the appendix for Research
+   - Use the org-mode file
+     - Includes many of the commit messages, emails, and code referenced
+       - Bonus email: jkh@ calling this topic esoteric :)
+     - Includes information on versions not referenced in paper
+       - UNIX v5 and other incomplete sections
+     - Includes notes of various levels of detail
+       - Code is often included where applicable
 ** Links
-   Thank you for coming!
+  - Thanks to
+    - Deb Goodkin for bringing me into the FreeBSD Community
+    - Rodney Grimes for help reading PDP-11 assembly
+    - Michael Dexter for coming up with this idea and for asking me to thank him.
+    - You for coming!
   - github.com/gwydirsam/bsd-coredump-history
   - github.com/dspinellis/unix-history-repo
-
-   
+  - people.freebsd.org/~rgrimes/index.html#kerneldump
 
 
  #+BEGIN_COMMENT
@@ -293,6 +434,7 @@
  # # has evolved from different PDP-11 models to hp300, i386 up to the present day
  # # with AMD64 and ARM64. In addition, the type of dump device has changed from tape
  # # to hard disk or another machine over a LAN.
+
 
 
 * Paper                                                            :noexport:
