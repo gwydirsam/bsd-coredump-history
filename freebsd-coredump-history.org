@@ -1140,21 +1140,20 @@ research for this paper and can be found in the appendix.
     #+END_SRC
 **** backtrace.io email :noexport:
 #+begin_quote
-    # 
-    # From one of our engineers after reading your paper as FYI:
-    # 
-    # "macOS has some nifty features for kernel debugging that aren't available
-    # on other platforms, which are not mentioned in that paper.
-    # 
-    # you can not only debug the kernel over the network (only possible via
-    # firewire or serial on FreeBSD but not ethernet), but all the special
-    # commands available in the console debugger (and then some) are available in
-    # macOS's gdb-based toolkit
-    # 
-    # i've never seen a network-based debugger for linux either, but perhaps
-    # there is one"
-    # 
-    # -Eddie
+    From one of our engineers after reading your paper as FYI:
+    
+    "macOS has some nifty features for kernel debugging that aren't available
+    on other platforms, which are not mentioned in that paper.
+    
+    you can not only debug the kernel over the network (only possible via
+    firewire or serial on FreeBSD but not ethernet), but all the special
+    commands available in the console debugger (and then some) are available in
+    macOS's gdb-based toolkit
+    
+    i've never seen a network-based debugger for linux either, but perhaps
+    there is one"
+    
+    -Eddie
 #+end_quote
 ** Core Dumps in Solaris (Not in Scope)                            :noexport:
    Solaris has several features that others don't. But Solaris is arguably not
