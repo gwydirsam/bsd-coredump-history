@@ -283,8 +283,6 @@ research for this paper and can be found in the appendix.
   further work on core dumps, failing that we hope it is interesting.
 
 * The Present
-** Core Dumps in UNIX                                              :noexport:
-   There is no "UNIX" anymore...
 ** Core Dumps in FreeBSD
 *** Quick Background
     While reading this paper you may wish to take a crash dump on your system
@@ -1140,7 +1138,8 @@ research for this paper and can be found in the appendix.
     #endif
     }
     #+END_SRC
-**** backtrace.io email
+**** backtrace.io email :noexport:
+#+begin_quote
     # 
     # From one of our engineers after reading your paper as FYI:
     # 
@@ -1156,6 +1155,7 @@ research for this paper and can be found in the appendix.
     # there is one"
     # 
     # -Eddie
+#+end_quote
 ** Core Dumps in Solaris (Not in Scope)                            :noexport:
    Solaris has several features that others don't. But Solaris is arguably not
    within the scope of this paper. Detailing Illmos' abilities instead.
@@ -1292,7 +1292,7 @@ research for this paper and can be found in the appendix.
 *** Notes                                                          :noexport:
    - Rodney Grimes Email
 
-     #+BEGIN_QUOTE
+     #+BEGIN_EXAMPLE
      > On Thu, Jan 12, 2017 at 11:03 PM, Rodney W. Grimes
      > <freebsd@pdx.rh.cn85.dnsmgr.net> wrote:
      > >> Hey Rod,
@@ -1321,7 +1321,7 @@ research for this paper and can be found in the appendix.
 
 
      Wow, 2 nits in all that writting, good job!
-     #+END_QUOTE
+     #+END_EXAMPLE
    - Netdumps
      - Duke University code from long ago
      - Picked up by Ed Maste at Sandvine, dropped
@@ -1390,34 +1390,11 @@ research for this paper and can be found in the appendix.
    - Development becomes easier because LKMs are easier to work with
    - Embedded systems benefit from a smaller kernel
 **** Email from Rod Grimes
-     #+BEGIN_QUOTE
-     Delivered-To: sam@samgwydir.com
-     Received: by 10.157.36.51 with SMTP id p48csp2535444ota;
-     Thu, 12 Jan 2017 22:07:09 -0800 (PST)
-     X-Received: by 10.99.126.27 with SMTP id z27mr21825681pgc.177.1484287629121;
-     Thu, 12 Jan 2017 22:07:09 -0800 (PST)
-     Return-Path: <freebsd@pdx.rh.cn85.dnsmgr.net>
-     Received: from pdx.rh.CN85.dnsmgr.net ([207.55.42.1])
-     by mx.google.com with ESMTPS id 96si3190182plz.28.2017.01.12.22.07.06
-     for <sam@samgwydir.com>
-     (version=TLS1 cipher=AES128-SHA bits=128/128);
-     Thu, 12 Jan 2017 22:07:08 -0800 (PST)
-     Received-SPF: neutral (google.com: 207.55.42.1 is neither permitted nor denied by best guess record for domain of freebsd@pdx.rh.cn85.dnsmgr.net) client-ip=207.55.42.1;
-     Authentication-Results: mx.google.com;
-     spf=neutral (google.com: 207.55.42.1 is neither permitted nor denied by best guess record for domain of freebsd@pdx.rh.cn85.dnsmgr.net) smtp.mailfrom=freebsd@pdx.rh.cn85.dnsmgr.net
-     Received: from pdx.rh.CN85.dnsmgr.net (localhost [127.0.0.1]) by pdx.rh.CN85.dnsmgr.net (8.13.3/8.13.3) with ESMTP id v0D66v5s052225 for <sam@samgwydir.com>; Thu, 12 Jan 2017 22:06:57 -0800 (PST) (envelope-from freebsd@pdx.rh.CN85.dnsmgr.net)
-     Received: (from freebsd@localhost) by pdx.rh.CN85.dnsmgr.net (8.13.3/8.13.3/Submit) id v0D66tiI052224 for sam@samgwydir.com; Thu, 12 Jan 2017 22:06:55 -0800 (PST) (envelope-from freebsd)
+     #+BEGIN_EXAMPLE
      From: "Rodney W. Grimes" <freebsd@pdx.rh.cn85.dnsmgr.net>
-     Message-Id: <201701130606.v0D66tiI052224@pdx.rh.CN85.dnsmgr.net>
      Subject: Re: Modular Dump
-     In-Reply-To: <CACddXfnSTgxUOLCVFkzjip9CRjxmqk83UbdQnB5XnGy8QVYW8Q@mail.gmail.com>
      To: Sam Gwydir <sam@samgwydir.com>
      Date: Thu, 12 Jan 2017 22:06:55 -0800 (PST)
-     Reply-To: rgrimes@freebsd.org
-     X-Mailer: ELM [version 2.4ME+ PL121h (25)]
-     MIME-Version: 1.0
-     Content-Transfer-Encoding: 7bit
-     Content-Type: text/plain; charset=US-ASCII
 
      > On Thu, Jan 12, 2017 at 11:03 PM, Rodney W. Grimes
      > <freebsd@pdx.rh.cn85.dnsmgr.net> wrote:
@@ -1490,7 +1467,7 @@ research for this paper and can be found in the appendix.
 
      -- 
      Rod Grimes                                                 rgrimes@freebsd.org
-     #+END_QUOTE
+     #+END_EXAMPLE
 
 ** Dump to swap on zvol
    Many users of FreeBSD use ZFS extensively. Though FreeBSD supports most ZFS
@@ -1505,7 +1482,9 @@ research for this paper and can be found in the appendix.
    
 *** Notes                                                          :noexport:
 
-**** TODO Test dump on swap on zvol
+**** DONE Test dump on swap on zvol
+     CLOSED: [2017-03-25 Sat 09:05]
+     This is the default -- it works :)
 
 
 **** omnios swap info
@@ -1547,12 +1526,6 @@ research for this paper and can be found in the appendix.
      savecore: Decompress the crash dump with
      'savecore -vf /var/crash/unknown/vmdump.0'
      #+END_QUOTE
-* Conclusion (incomplete)                                          :noexport:
-  Though it may seem like core dumps are a solved problem from the past, it
-  turns out the core dump code is an ever changing routine that is constantly
-  being modernized and adapted. 
-
-# (To be deleted, CF) "This constant changing reflects a need for extensibility within the routine."
 ** Recommendations (incomplete)
    - textdumps by defaults, but with better defaults?
    - documentation should include recommendations on swap size for different amounts of ram
@@ -1987,7 +1960,7 @@ dumpstack:
 **** FreeBSD 1.1                                                   :noexport:
 **** FreeBSD 1.1.5                                                 :noexport:
 ***** Notes                                                        :noexport:
-     #+BEGIN_QUOTE
+     #+BEGIN_EXAMPLE
      > On Thu, Jan 12, 2017 at 11:03 PM, Rodney W. Grimes
      > <freebsd@pdx.rh.cn85.dnsmgr.net> wrote:
      > >> Hey Rod,
@@ -2016,7 +1989,7 @@ dumpstack:
 
 
      Wow, 2 nits in all that writting, good job!
-     #+END_QUOTE
+     #+END_EXAMPLE
 *** FreeBSD 2.0.0 
 **** FreeBSD 2.0.0 
      - =doadump()= no longer exists, though is mentioned in comments. 
@@ -2037,7 +2010,7 @@ dumpstack:
 **** FreeBSD 2.2.8                                                 :noexport:
 **** Notes                                                         :noexport:
      # Pulls in 4.4BSD-Lite1 code for hp300, luna68k, news3400, pmax, and sparc.
-#+BEGIN_QUOTE
+#+BEGIN_EXAMPLE
   /ssh:freebsd-current:/root/src/unix-history-repo/:
   find . \( -type f -exec grep -q -e dumpsys \{\} \; \) -ls
   1945687      144 -rw-r--r--    1 root                             wheel                               72708 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/hp300/hp300/locore.s
@@ -2058,7 +2031,7 @@ dumpstack:
   1945710     2240 -rw-r--r--    1 root                             wheel                             1096432 Dec 23 02:00 .ref-BSD-4_4_Lite1/usr/src/sys/vax/tags
   2574311       80 -rw-r--r--    1 root                             wheel                               38769 Dec 23 02:00 .ref-FreeBSD-release/1.1.5/sys/i386/i386/machdep.c
   1703024       88 -rw-r--r--    1 root                             wheel                               44085 Dec 23 02:00 sys/i386/i386/machdep.c
-#+END_QUOTE
+#+END_EXAMPLE
 
 *** FreeBSD 3.0.0
 # **** FreeBSD 3.0.0
@@ -2333,7 +2306,7 @@ Sponsored by:   DARPA, NAI Labs
        - dump format bumped to 2
      - 6.2.0
        - As of 6.2.0 minidump - peter wemm
-    - THIS is WHAT STARTED THIS PROJECT 47c4404f96c6 * Don't dump core into a
+    - THIS IS WHAT STARTED THIS PROJECT 47c4404f96c6 * Don't dump core into a
       partition that is too small for it. If we do, we usually wrote backwareds
       into the proceeding partititon which is usually the root partition. 
 *** FreeBSD 7.0.0
@@ -2656,16 +2629,26 @@ Differential Revision:	https://reviews.freebsd.org/D5848
 
 [fn:13] https://svnweb.freebsd.org/base?view=revision&revision=309818
 
-
 [fn:1] The Design and Implementation of the FreeBSD operating system by McKusick, Neville-Neil, and Watson
+
 [fn:2] crash(8) - 3BSD
+
 [fn:3] man 9 panic - https://www.freebsd.org/cgi/man.cgi?query=panic&apropos=0&sektion=0&manpath=FreeBSD+10.3-RELEASE+and+Ports&arch=default&format=html
+
 [fn:4] =kern_shutdown.c= - https://svnweb.freebsd.org/base/head/sys/kern/kern_shutdown.c?view=markup#l336
+
 [fn:5] Unix History Repository - https://github.com/dspinellis/unix-history-repo
+
 [fn:6] A Repository with 44 Years of Unix Evolution - http://www.dmst.aueb.gr/dds/pubs/conf/2015-MSR-Unix-History/html/Spi15c.html
+
 [fn:7] https://en.wikipedia.org/wiki/Core_dump
+
 [fn:8] https://lists.freebsd.org/pipermail/freebsd-arch/2014-November/016231.html
+
 [fn:9] https://en.wikipedia.org/wiki/Core_dump
+
 [fn:10] https://developer.apple.com/library/content/technotes/tn2004/tn2118.html
+
 [fn:11] https://lists.freebsd.org/pipermail/freebsd-current/2007-December/081626.html
+
 [fn:12] https://opensource.apple.com/source/xnu/xnu-3789.31.2/osfmk/kdp/kdp_core.c.auto.html
