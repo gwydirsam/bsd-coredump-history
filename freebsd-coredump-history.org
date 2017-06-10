@@ -1139,7 +1139,7 @@ research for this paper and can be found in the appendix.
     }
     #+END_SRC
 **** backtrace.io email :noexport:
-#+begin_quote
+#+begin_example
     From one of our engineers after reading your paper as FYI:
     
     "macOS has some nifty features for kernel debugging that aren't available
@@ -1154,7 +1154,22 @@ research for this paper and can be found in the appendix.
     there is one"
     
     -Eddie
-#+end_quote
+#+end_example
+#+begin_example
+Hi Sam,
+
+Sorry, but the OS X / MachO core dump format or code to deal with same was =
+never in my area so I would have no idea whether what you=E2=80=99ve writte=
+n is technically correct or not. :)
+
+My company rolodex is also almost 4 years out of date and pretty much all o=
+f my contacts have moved on, so I wouldn't even know where to point you for=
+ what is, admittedly, a somewhat esoteric topic!
+
+Sorry I couldn=E2=80=99t help.
+
+- Jordan
+#+end_example
 ** Core Dumps in Solaris (Not in Scope)                            :noexport:
    Solaris has several features that others don't. But Solaris is arguably not
    within the scope of this paper. Detailing Illmos' abilities instead.
